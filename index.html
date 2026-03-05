@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JOOLI Agenda</title>
+<link rel="stylesheet" href="./css/style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d4af37">
+<script type="module" src="./js/main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales-all.global.min.js"></script>
+</head>
+<body>
+
+<header>
+  <img src="./logoB.png" class="logo">
+  <span>JOOLI Catering - Agenda</span>
+  <button id="darkBtn">🌙</button>
+</header>
+
+<div class="container" id="loginDiv">
+  <h3>Login</h3>
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Contraseña">
+  <button id="loginBtn">Ingresar</button>
+</div>
+
+<div class="container" id="appDiv" style="display:none;">
+  <div class="stats">
+    <div>Total Mes <span id="totalMes">0</span></div>
+    <div>Señas <span id="senasMes">0</span></div>
+    <div>Saldo <span id="saldoMes">0</span></div>
+    <div>Eventos <span id="eventosMes">0</span></div>
+  </div>
+
+  <h3>Filtrar por mes</h3>
+  <input type="month" id="monthFilter">
+
+  <h3>Nuevo Evento</h3>
+  <div class="form-grid">
+    <div class="form-group"><label for="date">Fecha</label><input type="date" id="date"></div>
+    <div class="form-group"><label for="type">Tipo de Evento</label><input type="text" id="type" placeholder="Tipo evento"></div>
+    <div class="form-group"><label for="client">Cliente</label><input type="text" id="client" placeholder="Cliente"></div>
+    <div class="form-group"><label for="cuit">CUIT Cliente</label><input type="text" id="cuit" placeholder="CUIT"></div>
+    <div class="form-group"><label for="place">Lugar</label><input type="text" id="place" placeholder="Lugar"></div>
+    <div class="form-group"><label for="guests">Invitados</label><input type="number" id="guests"></div>
+    <div class="form-group"><label for="total">Total $</label><input type="number" id="total"></div>
+    <div class="form-group"><label for="deposit">Seña $</label><input type="number" id="deposit"></div>
+    <div class="form-group"><label for="status">Estado</label>
+      <select id="status">
+        <option>Presupuestado</option>
+        <option>Seña pagada</option>
+        <option>Confirmado</option>
+        <option>Realizado</option>
+        <option>Cancelado</option>
+      </select>
+    </div>
+    <div class="form-group"><label for="paid">Pagado</label>
+      <select id="paid">
+        <option value="false">No</option>
+        <option value="true">Sí</option>
+      </select>
+    </div>
+    <div class="form-group"><label for="invoiceNumber">Número de Factura</label><input type="text" id="invoiceNumber"></div>
+  </div>
+
+  <div class="form-group"><label for="notes">Notas</label><textarea id="notes"></textarea></div>
+  <button id="addBtn">Guardar Evento</button>
+<button id="updateBtn" style="display:none;">Guardar Cambios</button>
+<button id="newBtn">Nuevo Evento</button>
+
+  <h3>Calendario</h3>
+  <div id="calendar"></div>
+
+  <h3>Eventos</h3>
+  <div id="eventsList"></div>
+</div>
+
+</body>
+</html>
