@@ -21,11 +21,11 @@ export function initCalendar() {
  calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
     locale: 'es',
-    height: 'auto',
+    height: 'auto', // Esto ayuda mucho a que no ocupe espacio innecesario
     headerToolbar: {
-      left: 'prev,next today',
+      left: 'prev,next', // Quitamos 'today' en móvil si molesta
       center: 'title',
-      right: 'dayGridMonth,timeGridWeek'
+      right: 'dayGridMonth' // Quitamos 'timeGridWeek' si se ve muy mal
     },
     buttonText: {
       today: 'Hoy',

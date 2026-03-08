@@ -27,6 +27,16 @@ export function initEvents() {
   const cancelFormBtn = document.getElementById("cancelFormBtn");
   const addBtn = document.getElementById("addBtn");
   const updateBtn = document.getElementById("updateBtn");
+  const toggleStatsBtn = document.getElementById("toggleStatsBtn");
+  const statsContainer = document.getElementById("statsContainer");
+
+if (toggleStatsBtn && statsContainer) {
+    toggleStatsBtn.onclick = () => {
+        const isHidden = statsContainer.style.display === "none";
+        statsContainer.style.display = isHidden ? "block" : "none";
+        toggleStatsBtn.innerText = isHidden ? "Ocultar Estadísticas" : "Ver Estadísticas";
+    };
+}
 
   loadEvents();
 
