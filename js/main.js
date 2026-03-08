@@ -1,27 +1,25 @@
 import { initAuth } from "./auth.js";
 import { initEvents } from "./events.js";
-import { initCalendar } from "./calendar.js";
+import { initCalendar, refreshCalendar } from "./calendar.js"; // Importamos refresh
 import { initUI } from "./ui.js";
 
 const loginDiv = document.getElementById("loginDiv");
 const appDiv = document.getElementById("appDiv");
 
 document.getElementById("darkBtn").onclick =
-  ()=>document.body.classList.toggle("dark");
+  () => document.body.classList.toggle("dark");
 
-initAuth(()=>{
-
-  loginDiv.style.display="none";
-  appDiv.style.display="block";
+initAuth((user) => {
+  loginDiv.style.display = "none";
+  appDiv.style.display = "block";
 
   initUI();
   initEvents();
-  initCalendar();
-
+  
+  // Vamos a darle un poco más de tiempo para asegurar que el DOM esté pintado
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      initCalendar();
+    }, 300);
+  });
 });
-
-if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./sw.js")
-  .then(()=>console.log("Service Worker activo"))
-  .catch(err=>console.log("SW error",err));
-}

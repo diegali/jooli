@@ -1,4 +1,4 @@
-import { db } from "./auth.js"; //
+import { db } from "./auth.js";
 import {
   collection,
   addDoc,
@@ -8,152 +8,211 @@ import {
   deleteDoc,
   doc,
   updateDoc
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"; //
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-let editingId = null; //
+let editingId = null;
+
+// Función auxiliar de formato definida fuera para ser accesible globalmente en el módulo
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("es-AR");
+}
 
 export function initEvents() {
-  const eventsList = document.getElementById("eventsList"); //
-  const monthFilter = document.getElementById("monthFilter"); //
+  const eventsList = document.getElementById("eventsList");
+  const monthFilter = document.getElementById("monthFilter");
+  const formContainer = document.getElementById("eventFormContainer");
+  const showFormBtn = document.getElementById("showFormBtn");
+  const cancelFormBtn = document.getElementById("cancelFormBtn");
+  const addBtn = document.getElementById("addBtn");
+  const updateBtn = document.getElementById("updateBtn");
 
-  loadEvents(); //
+  loadEvents();
 
-  document.getElementById("addBtn").onclick = () => saveEvent(false); //
-  document.getElementById("updateBtn").onclick = () => saveEvent(true); //
-  document.getElementById("newBtn").onclick = resetForm; //
-
-  if (monthFilter) {
-    monthFilter.addEventListener("change", loadEvents); //
+  if (addBtn) addBtn.onclick = () => saveEvent(false);
+  if (updateBtn) updateBtn.onclick = () => saveEvent(true);
+  
+  if (showFormBtn) {
+    showFormBtn.onclick = () => {
+      resetForm();
+      if (formContainer) {
+        formContainer.style.display = "block";
+        formContainer.scrollIntoView({ behavior: "smooth" });
+      }
+    };
   }
 
-  // --- FUNCIÓN PARA ACTUALIZAR ESTADÍSTICAS ---
-  function updateStats(events) {
-    const selectedMonth = monthFilter.value; // Obtiene el valor del filtro (YYYY-MM)
-    let total = 0, senas = 0, cantidad = 0; //
+  if (cancelFormBtn) {
+    cancelFormBtn.onclick = () => {
+      if (formContainer) formContainer.style.display = "none";
+    };
+  }
 
-    events.forEach(e => {
-      // Si no hay filtro o si la fecha del evento coincide con el mes seleccionado
-      if (!selectedMonth || e.date.startsWith(selectedMonth)) {
-        total += Number(e.total) || 0; //
-        senas += Number(e.deposit) || 0; //
-        cantidad++; //
-      }
-    });
-
-    // Inyecta los valores en el HTML del index
-    document.getElementById("totalMes").innerText = `$${total.toLocaleString()}`; //
-    document.getElementById("senasMes").innerText = `$${senas.toLocaleString()}`; //
-    document.getElementById("saldoMes").innerText = `$${(total - senas).toLocaleString()}`; //
-    document.getElementById("eventosMes").innerText = cantidad; //
+  if (monthFilter) {
+    monthFilter.addEventListener("change", loadEvents);
   }
 
   async function saveEvent(isUpdate = false) {
     const data = {
-      date: document.getElementById("date").value, //
-      type: document.getElementById("type").value, //
-      client: document.getElementById("client").value, //
-      cuit: document.getElementById("cuit").value, //
-      place: document.getElementById("place").value, //
-      guests: Number(document.getElementById("guests").value) || 0, //
-      total: Number(document.getElementById("total").value) || 0, //
-      deposit: Number(document.getElementById("deposit").value) || 0, //
-      status: document.getElementById("status").value, //
-      paid: document.getElementById("paid").value === "true", //
-      invoiceNumber: document.getElementById("invoiceNumber").value, //
-      notes: document.getElementById("notes").value //
+      date: document.getElementById("date").value,
+      type: document.getElementById("type").value,
+      client: document.getElementById("client").value,
+      cuit: document.getElementById("cuit").value,
+      place: document.getElementById("place").value,
+      guests: Number(document.getElementById("guests").value) || 0,
+      total: Number(document.getElementById("total").value) || 0,
+      deposit: Number(document.getElementById("deposit").value) || 0,
+      status: document.getElementById("status").value,
+      paid: document.getElementById("paid").value === "true",
+      invoiceNumber: document.getElementById("invoiceNumber").value,
+      notes: document.getElementById("notes").value
     };
 
     try {
       if (isUpdate && editingId) {
-        await updateDoc(doc(db, "events", editingId), data); //
-        editingId = null; //
-        document.getElementById("updateBtn").style.display = "none"; //
-        document.getElementById("addBtn").style.display = "inline-block"; //
+        await updateDoc(doc(db, "events", editingId), data);
       } else {
-        await addDoc(collection(db, "events"), data); //
+        await addDoc(collection(db, "events"), data);
       }
-      resetForm(); // Usamos la función reset para limpiar todo correctamente
+      resetForm();
     } catch (e) {
-      alert("Error guardando evento: " + e.message); //
+      alert("Error guardando evento: " + e.message);
     }
   }
 
-  function loadEvents() {
-    const q = query(collection(db, "events"), orderBy("date")); //
+function loadEvents() {
+    const q = query(collection(db, "events"), orderBy("date"));
 
     onSnapshot(q, (snap) => {
-      eventsList.innerHTML = ""; //
-      const allEvents = []; // Array temporal para las estadísticas
+      if (!eventsList) return;
+      eventsList.innerHTML = "";
+      const allEvents = [];
 
       snap.forEach(d => {
-        const e = d.data(); //
-        allEvents.push(e); // Guardamos los datos para calcular
+        const e = d.data();
+        allEvents.push(e);
 
-        const card = document.createElement("div"); //
-        card.className = "card"; //
-        card.dataset.id = d.id; //
+        // Mapeo de colores para los estados
+        const colors = {
+          "Presupuestado": "#f1c40f",
+          "Seña pagada": "#e67e22",
+          "Confirmado": "#27ae60",
+          "Realizado": "#2980b9",
+          "Cancelado": "#c0392b"
+        };
+        const estadoColor = colors[e.status] || "#ccc";
 
+        const card = document.createElement("div");
+        card.className = "card";
+        card.dataset.id = d.id;
+
+        // Estructura completa de la tarjeta
         card.innerHTML = `
-          <strong>${formatDate(e.date)}</strong> - ${e.type} (${e.client})<br>
-          Estado: <span class="status-badge">${e.status}</span><br>
-          📍 ${e.place} | 👥 ${e.guests}<br>
-          💰 Total: $${e.total.toLocaleString()} | 💵 Seña: $${e.deposit.toLocaleString()}<br>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <strong>${formatDate(e.date)}</strong> - ${e.type}<br>
+              <small>Cliente: ${e.client} | Lugar: ${e.place}</small>
+            </div>
+            <span class="status-badge" style="background-color: ${estadoColor}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em;">
+              ${e.status}
+            </span>
+          </div>
+          <p style="margin:10px 0; font-size:0.9em;">
+            👥 ${e.guests} pers. | 💰 $${Number(e.total).toLocaleString()} 
+            (Seña: $${Number(e.deposit).toLocaleString()})
+          </p>
           <button class="deleteBtn">Eliminar</button>
-        `; //
+        `;
 
         card.querySelector(".deleteBtn").onclick = (ev) => {
-          ev.stopPropagation(); //
-          if (confirm("Eliminar evento?")) {
-            deleteDoc(doc(db, "events", d.id)); //
+          ev.stopPropagation();
+          if (confirm("¿Eliminar evento?")) {
+            deleteDoc(doc(db, "events", d.id));
           }
         };
 
-        card.onclick = () => fillForm(e, d.id); //
-        eventsList.appendChild(card); //
+        card.onclick = () => fillFormForEdit(e, d.id);
+        eventsList.appendChild(card);
       });
-
-      updateStats(allEvents); // Calculamos las estadísticas después de cargar las tarjetas
+      updateStats(allEvents);
     });
   }
 
-  function fillForm(e, id) {
-    editingId = id; //
-    document.getElementById("date").value = e.date; //
-    document.getElementById("type").value = e.type; //
-    document.getElementById("client").value = e.client; //
-    document.getElementById("cuit").value = e.cuit || ""; //
-    document.getElementById("place").value = e.place; //
-    document.getElementById("guests").value = e.guests || 0; //
-    document.getElementById("total").value = e.total || 0; //
-    document.getElementById("deposit").value = e.deposit || 0; //
-    document.getElementById("status").value = e.status; //
-    document.getElementById("paid").value = e.paid ? "true" : "false"; //
-    document.getElementById("invoiceNumber").value = e.invoiceNumber || ""; //
-    document.getElementById("notes").value = e.notes || ""; //
+  function updateStats(events) {
+    const selectedMonth = monthFilter ? monthFilter.value : "";
+    let total = 0, senas = 0, cantidad = 0;
 
-    document.getElementById("updateBtn").style.display = "inline-block"; //
-    document.getElementById("addBtn").style.display = "none"; //
-  }
-
-  function resetForm() {
-    editingId = null; //
-    document.querySelectorAll("#appDiv input, #appDiv textarea").forEach(el => {
-      if (el.id !== "monthFilter") el.value = ""; // No borramos el filtro de mes
+    events.forEach(e => {
+      if (!selectedMonth || e.date.startsWith(selectedMonth)) {
+        total += Number(e.total) || 0;
+        senas += Number(e.deposit) || 0;
+        cantidad++;
+      }
     });
-    document.getElementById("status").value = "Presupuestado"; //
-    document.getElementById("paid").value = "false"; //
-    document.getElementById("updateBtn").style.display = "none"; //
-    document.getElementById("addBtn").style.display = "inline-block"; //
+
+    const elTotal = document.getElementById("totalMes");
+    const elSenas = document.getElementById("senasMes");
+    const elSaldo = document.getElementById("saldoMes");
+    const elEventos = document.getElementById("eventosMes");
+
+    if (elTotal) elTotal.innerText = `$${total.toLocaleString()}`;
+    if (elSenas) elSenas.innerText = `$${senas.toLocaleString()}`;
+    if (elSaldo) elSaldo.innerText = `$${(total - senas).toLocaleString()}`;
+    if (elEventos) elEventos.innerText = cantidad;
   }
 }
 
-function formatDate(dateStr) {
-  const d = new Date(dateStr + "T00:00:00"); // Forzamos hora local para evitar desfases de zona horaria
-  return d.toLocaleDateString("es-AR"); //
-}
-
-// Mantener esta función por si el calendario la necesita
 export function fillFormForEdit(e, id) {
-  editingId = id; //
-  // ... (puedes llamar internamente a fillForm para no repetir código)
+  const formContainer = document.getElementById("eventFormContainer");
+  
+  const fields = {
+    "date": e.date,
+    "type": e.type,
+    "client": e.client,
+    "cuit": e.cuit || "",
+    "place": e.place,
+    "guests": e.guests || 0,
+    "total": e.total || 0,
+    "deposit": e.deposit || 0,
+    "status": e.status,
+    "paid": e.paid ? "true" : "false",
+    "invoiceNumber": e.invoiceNumber || "",
+    "notes": e.notes || ""
+  };
+
+  Object.keys(fields).forEach(key => {
+    const el = document.getElementById(key);
+    if (el) el.value = fields[key];
+  });
+
+  editingId = id;
+  
+  const updateBtn = document.getElementById("updateBtn");
+  const addBtn = document.getElementById("addBtn");
+  
+  if (updateBtn) updateBtn.style.display = "inline-block";
+  if (addBtn) addBtn.style.display = "none";
+  
+  if (formContainer) {
+    formContainer.style.display = "block";
+    formContainer.scrollIntoView({ behavior: "smooth" });
+  }
+}
+
+function resetForm() {
+  editingId = null;
+  const formContainer = document.getElementById("eventFormContainer");
+  document.querySelectorAll("#eventFormContainer input, #eventFormContainer textarea").forEach(el => {
+    el.value = "";
+  });
+  
+  const statusEl = document.getElementById("status");
+  const paidEl = document.getElementById("paid");
+  if (statusEl) statusEl.value = "Presupuestado";
+  if (paidEl) paidEl.value = "false";
+  
+  document.getElementById("updateBtn").style.display = "none";
+  document.getElementById("addBtn").style.display = "inline-block";
+  if (formContainer) formContainer.style.display = "none";
 }
