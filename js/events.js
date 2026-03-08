@@ -1,22 +1,40 @@
 import { db } from "./auth.js";
 import {
   collection,
-  addDoc,
   onSnapshot,
   query,
   orderBy,
   deleteDoc,
   doc,
   updateDoc,
+  addDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 let editingId = null;
 
-// Formateo de fecha para las tarjetas
 function formatDate(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("es-AR");
+}
+
+function getMonthLabel(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  const months = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
+  return `${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 export function initEvents() {
@@ -32,7 +50,6 @@ export function initEvents() {
 
   loadEvents();
 
-  // --- Lógica de Interfaz ---
   if (toggleStatsBtn && statsContainer) {
     toggleStatsBtn.onclick = () => {
       const isHidden = statsContainer.style.display === "none";
@@ -41,14 +58,6 @@ export function initEvents() {
         ? "Ocultar Estadísticas"
         : "Ver Estadísticas y Filtros";
       toggleStatsBtn.style.background = isHidden ? "#c0392b" : "#3498db";
-
-      // Si se abre y el filtro está vacío, ponemos el mes actual
-      if (isHidden && !monthFilter.value) {
-        const now = new Date();
-        const yearMonth = now.toISOString().substring(0, 7); // Formato YYYY-MM
-        monthFilter.value = yearMonth;
-        loadEvents(); // Disparamos la carga para que se actualicen los números
-      }
     };
   }
 
@@ -61,15 +70,11 @@ export function initEvents() {
     };
   }
 
-  if (cancelFormBtn) {
-    cancelFormBtn.onclick = () => resetForm();
-  }
-
+  if (cancelFormBtn) cancelFormBtn.onclick = () => resetForm();
   if (addBtn) addBtn.onclick = () => saveEvent(false);
   if (updateBtn) updateBtn.onclick = () => saveEvent(true);
   if (monthFilter) monthFilter.addEventListener("change", loadEvents);
 
-  // --- Funciones de Datos ---
   async function saveEvent(isUpdate = false) {
     const data = {
       date: document.getElementById("date").value,
@@ -87,17 +92,15 @@ export function initEvents() {
     };
 
     if (!data.date || !data.client) {
-      alert("Por favor completa al menos Fecha y Cliente");
+      alert("Por favor completa Fecha y Cliente");
       return;
     }
 
     try {
       if (isUpdate && editingId) {
         await updateDoc(doc(db, "events", editingId), data);
-        alert("✅ Evento actualizado");
       } else {
         await addDoc(collection(db, "events"), data);
-        alert("✅ Evento guardado");
       }
       resetForm();
     } catch (e) {
@@ -111,53 +114,74 @@ export function initEvents() {
       if (!eventsList) return;
       eventsList.innerHTML = "";
       const allEvents = [];
+      const today = new Date().toISOString().split("T")[0];
+
+      const upcomingGroups = {};
+      const pastGroups = {};
 
       snap.forEach((d) => {
         const e = d.data();
         allEvents.push(e);
+        const monthKey = getMonthLabel(e.date);
+        const isPast = e.date < today;
 
-        const colors = {
-          Presupuestado: "#f1c40f",
-          "Seña pagada": "#e67e22",
-          Confirmado: "#27ae60",
-          Realizado: "#2980b9",
-          Cancelado: "#c0392b",
-        };
-
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <div style="display:flex; justify-content:space-between;">
-            <div>
-              <strong>${formatDate(e.date)}</strong> - ${e.type}<br>
-              <small>${e.client} | ${e.place}</small>
-            </div>
-            <span class="status-badge" style="background:${colors[e.status] || "#666"}; color:white; padding:2px 8px; border-radius:10px; font-size:0.8em;">
-              ${e.status}
-            </span>
-          </div>
-          <button class="deleteBtn" style="margin-top:10px;">Eliminar</button>
-        `;
-
-        card.querySelector(".deleteBtn").onclick = (ev) => {
-          ev.stopPropagation();
-          if (confirm("¿Eliminar este evento?"))
-            deleteDoc(doc(db, "events", d.id));
-        };
-
-        card.onclick = () => fillFormForEdit(e, d.id);
-        eventsList.appendChild(card);
+        if (isPast) {
+          if (!pastGroups[monthKey]) pastGroups[monthKey] = [];
+          pastGroups[monthKey].push(createCard(e, d.id));
+        } else {
+          if (!upcomingGroups[monthKey]) upcomingGroups[monthKey] = [];
+          upcomingGroups[monthKey].push(createCard(e, d.id));
+        }
       });
+
+      renderGroup(upcomingGroups, "📅 Próximos Eventos", "#27ae60");
+      renderGroup(pastGroups, "📜 Historial", "#7f8c8d");
+
       updateStats(allEvents);
     });
   }
 
+  function renderGroup(groups, sectionTitle, color) {
+    if (Object.keys(groups).length === 0) return;
+    eventsList.innerHTML += `<h3 style="color:${color}; margin-top:30px;">${sectionTitle}</h3>`;
+    for (const month in groups) {
+      eventsList.innerHTML += `<h4 style="margin: 15px 0 5px 0; color: #d4af37;">${month}</h4>`;
+      groups[month].forEach((card) => (eventsList.innerHTML += card));
+    }
+  }
+
+  function createCard(e, id) {
+    const colors = {
+      Presupuestado: "#f1c40f",
+      "Seña pagada": "#e67e22",
+      Confirmado: "#27ae60",
+      Realizado: "#2980b9",
+      Cancelado: "#c0392b",
+    };
+    const statusStyle = `background:${colors[e.status] || "#666"}; color:white; padding:4px 10px; border-radius:12px; font-size:0.75em; font-weight:bold; display:inline-block; min-width:80px; text-align:center;`;
+
+    return `
+      <div class="card" onclick="fillFormForEdit(${JSON.stringify(e).replace(/"/g, "'")}, '${id}')" style="cursor:pointer; border:1px solid #ddd; padding:12px; border-radius:8px; margin-bottom:10px; background:white;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <strong>${formatDate(e.date)}</strong> - ${e.type}<br>
+            <small style="color:#555;">Cliente: ${e.client} | Lugar: ${e.place}</small>
+          </div>
+          <span style="${statusStyle}">${e.status}</span>
+        </div>
+        <div style="margin-top:8px; font-size:0.9em; color:#333;">
+          👥 ${e.guests} pers. | 💰 $${Number(e.total).toLocaleString()} 
+          (Seña: $${Number(e.deposit).toLocaleString()})
+        </div>
+      </div>
+    `;
+  }
+
   function updateStats(events) {
-    const selectedMonth = monthFilter ? monthFilter.value : "";
+    const selectedMonth = monthFilter.value;
     let total = 0,
       senas = 0,
       cantidad = 0;
-
     events.forEach((e) => {
       if (!selectedMonth || e.date.startsWith(selectedMonth)) {
         total += Number(e.total) || 0;
@@ -165,7 +189,6 @@ export function initEvents() {
         cantidad++;
       }
     });
-
     if (document.getElementById("totalMes"))
       document.getElementById("totalMes").innerText =
         `$${total.toLocaleString()}`;
@@ -198,10 +221,8 @@ export function fillFormForEdit(e, id) {
     if (document.getElementById(f))
       document.getElementById(f).value = e[f] || "";
   });
-
   if (document.getElementById("paid"))
     document.getElementById("paid").value = e.paid ? "true" : "false";
-
   editingId = id;
   document.getElementById("formTitle").innerText = "Editando Evento";
   document.getElementById("updateBtn").style.display = "inline-block";
@@ -214,16 +235,7 @@ export function fillFormForEdit(e, id) {
 
 function resetForm() {
   editingId = null;
-  const inputs = document.querySelectorAll(
-    "#eventFormContainer input, #eventFormContainer textarea, #eventFormContainer select",
-  );
-  inputs.forEach((i) => {
-    if (i.id === "status") i.value = "Presupuestado";
-    else if (i.id === "paid") i.value = "false";
-    else if (i.id === "type") i.value = "Catering Completo";
-    else i.value = "";
-  });
+  document.getElementById("eventFormContainer").style.display = "none";
   document.getElementById("updateBtn").style.display = "none";
   document.getElementById("addBtn").style.display = "inline-block";
-  document.getElementById("eventFormContainer").style.display = "none";
 }

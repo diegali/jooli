@@ -19,29 +19,28 @@ export function initCalendar() {
 
   calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
+    // --- FORZAMOS EL IDIOMA ESPAÑOL ---
     locale: "es",
+    // ----------------------------------
     height: "auto",
     headerToolbar: {
       left: "prev,next",
       center: "title",
       right: "dayGridMonth",
     },
-    // --- MEJORA: Abrir formulario al tocar un día vacío ---
+    buttonText: {
+      today: "Hoy",
+      month: "Mes",
+      week: "Semana",
+    },
     dateClick: function (info) {
-      // Limpiamos el formulario para un nuevo evento
-      const addBtn = document.getElementById("addBtn");
       const showFormBtn = document.getElementById("showFormBtn");
+      if (showFormBtn) showFormBtn.click();
 
-      if (showFormBtn) showFormBtn.click(); // Disparamos la lógica de reset y apertura
-
-      // Ponemos automáticamente la fecha que tocaste
       const dateInput = document.getElementById("date");
       if (dateInput) dateInput.value = info.dateStr;
     },
-
-    // --- MEJORA: Edición al tocar un evento ---
     eventClick: function (info) {
-      // Usamos la función global de events.js que ya maneja el scroll y el título
       fillFormForEdit(info.event.extendedProps, info.event.id);
     },
   });
@@ -67,7 +66,6 @@ function loadCalendarEvents() {
 
     snap.forEach((d) => {
       const e = d.data();
-      // Mismo mapa de colores que en las tarjetas para consistencia visual
       const colors = {
         Presupuestado: "#f1c40f",
         "Seña pagada": "#e67e22",
@@ -78,7 +76,7 @@ function loadCalendarEvents() {
 
       events.push({
         id: d.id,
-        title: e.client, // Título más corto para que quepa mejor en móvil
+        title: e.client,
         start: e.date,
         backgroundColor: colors[e.status] || "#ccc",
         borderColor: colors[e.status] || "#ccc",

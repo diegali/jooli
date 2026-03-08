@@ -119,6 +119,31 @@ textarea {
   color: #111;
 }
 
+/* Estilo para el logo */
+.logo {
+  height: 70px; /* Tamaño que definimos */
+  width: auto;
+  vertical-align: middle; /* Alinea el logo con el texto */
+}
+
+/* Estilo para el nuevo título resaltado */
+.header-title {
+  font-size: 1.2rem; /* Tamaño más grande */
+  font-weight: 800; /* Muy grueso (resaltado) */
+  color: #d4af37; /* Color dorado (o el que prefieras) */
+  margin-left: 12px; /* Espacio entre el logo y el texto */
+  letter-spacing: 0.5px; /* Un toque de elegancia */
+  text-transform: uppercase; /* Opcional: todo en mayúsculas */
+}
+
+/* Ajuste para que todo el header esté bien alineado */
+header {
+  display: flex;
+  align-items: center; /* Asegura que todo quede centrado verticalmente */
+  padding: 10px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
 body.dark .card {
   background: #1e1e1e;
   color: white;
@@ -148,7 +173,7 @@ body.dark .card.selected {
   margin-top: 10px;
 }
 
-@media(max-width:700px) {
+@media (max-width: 700px) {
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -275,7 +300,9 @@ body.dark .fc {
   margin-bottom: 10px;
   border-radius: 8px;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .card:hover {
@@ -285,7 +312,6 @@ body.dark .fc {
 
 /* Ajustes para móviles */
 @media (max-width: 600px) {
-
   /* Reducir tamaño de títulos del calendario */
   .fc .fc-toolbar-title {
     font-size: 1rem !important;
