@@ -26,7 +26,6 @@ window.showSection = function (sectionId) {
   const formContainer = document.getElementById("eventFormContainer");
   const summaryEl = document.getElementById("daySummary");
 
-  // Ocultar elementos al cambiar de sección
   if (formContainer) formContainer.style.display = "none";
   if (summaryEl) summaryEl.style.display = "none";
 
@@ -49,99 +48,90 @@ window.showSection = function (sectionId) {
   }
 };
 
-// --- FUNCIÓN PARA CARGAR STAFF EN EL FORMULARIO ---
 export async function renderStaffSelection() {
   const container = document.getElementById("staffCheckboxes");
   if (!container) return;
 
-  const q = query(collection(db, "staff"), orderBy("nombre", "asc"));
-
+  const q = query(collection(db, "staff"), orderBy("nombre"));
   try {
     const querySnapshot = await getDocs(q);
     container.innerHTML = "";
-
     if (querySnapshot.empty) {
       container.innerHTML =
         "<small style='padding:10px;'>No hay staff cargado</small>";
       return;
     }
-
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       container.innerHTML += `
         <label>
           <input type="checkbox" name="staffSelected" value="${doc.id}" 
-                 data-nombre="${data.nombre}" data-tel="${data.telefono}"
-                 style="margin: 0;">
+                 data-nombre="${data.nombre}" data-tel="${data.telefono}" style="margin: 0;">
           ${data.nombre}
-        </label>
-      `;
+        </label>`;
     });
   } catch (e) {
     console.error("Error cargando staff:", e);
   }
 }
 
-// --- FUNCIÓN PARA MOSTRAR NOMBRE DE USUARIO ---
 function updateUserNameDisplay() {
   const userNameDisplay = document.getElementById("userNameDisplay");
   if (!userNameDisplay) return;
-
   const email = auth.currentUser?.email;
   const usuariosMap = {
     "almos2712@hotmail.com": "Laura",
     "mariano@a.com": "Mariano",
     "seba@a.com": "Sebastián",
   };
-
-  const nombre = usuariosMap[email] || "Usuario";
-  userNameDisplay.innerText = `${nombre}`;
+  userNameDisplay.innerText = usuariosMap[email] || "Usuario";
 }
 
-// --- INICIALIZACIÓN ---
 document.addEventListener("DOMContentLoaded", () => {
-  // Escuchador para el botón de mostrar formulario
   const showFormBtn = document.getElementById("showFormBtn");
-  showFormBtn?.addEventListener("click", () => {
-    renderStaffSelection();
-  });
-
-  // Delegación de eventos para el botón de WhatsApp (funciona siempre)
-  document.addEventListener("click", (e) => {
-    if (e.target && e.target.id === "whatsappBtn") {
-      console.log("¡Clic detectado!");
-
-      const evento = {
-        place:
-          document.getElementById("lugarInput")?.value ||
-          "Lugar no especificado",
-        date:
-          document.getElementById("fechaInput")?.value ||
-          "Fecha no especificada",
-        guests: document.getElementById("invitadosInput")?.value || "0",
-        total: document.getElementById("totalInput")?.value || "0",
-        notes: document.getElementById("notasInput")?.value || "Sin notas",
-      };
-    }
-  });
+  showFormBtn?.addEventListener("click", () => renderStaffSelection());
 
   const notifSound = new Audio(
     "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3",
   );
   let inicializado = false;
+  let cantidadAnterior = 0;
+  let isProcessing = false;
+
   const notifWrapper = document.getElementById("notificationWrapper");
   const notifPanel = document.getElementById("notificationPanel");
 
-  function formatarHora(timestamp) {
-    if (!timestamp) return "";
-    const date = timestamp.toDate();
-    return date.toLocaleTimeString("es-AR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  // MANEJADOR DE CLIC BLINDADO
+  if (notifWrapper) {
+    notifWrapper.onclick = (e) => {
+      if (isProcessing) return;
+      isProcessing = true;
+      e.stopPropagation();
+
+      const estaAbierto = notifPanel.style.display === "block";
+      notifPanel.style.display = estaAbierto ? "none" : "block";
+
+      if (!estaAbierto) {
+        marcarNotificacionesComoLeidas();
+      }
+      setTimeout(() => {
+        isProcessing = false;
+      }, 300);
+    };
   }
 
-  let cantidadAnterior = 0;
+  document.onclick = (e) => {
+    if (notifPanel && !notifWrapper?.contains(e.target)) {
+      notifPanel.style.display = "none";
+    }
+  };
+
+  function formatarHora(timestamp) {
+    if (!timestamp) return "";
+    return timestamp
+      .toDate()
+      .toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  }
 
   function iniciarEscuchadorNotificaciones() {
     const userEmail = auth.currentUser?.email;
@@ -153,31 +143,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     onSnapshot(q, (snapshot) => {
       const filtradas = snapshot.docs.filter(
-        (doc) => doc.data().creadoPorEmail !== userEmail,
+        (d) => d.data().creadoPorEmail !== userEmail,
       );
       const cantidadActual = filtradas.length;
 
       if (inicializado && cantidadActual > cantidadAnterior) {
-        notifSound
-          .play()
-          .catch((e) => console.log("Audio bloqueado por navegador."));
+        notifSound.play().catch(() => {});
       }
-
       if (countEl) {
         countEl.innerText = cantidadActual;
         countEl.style.display = cantidadActual > 0 ? "flex" : "none";
       }
-
       cantidadAnterior = cantidadActual;
       inicializado = true;
     });
   }
-
-  notifWrapper?.addEventListener("click", () => {
-    const isVisible = notifPanel.style.display === "block";
-    notifPanel.style.display = isVisible ? "none" : "block";
-    if (!isVisible) marcarNotificacionesComoLeidas();
-  });
 
   async function marcarNotificacionesComoLeidas() {
     const userEmail = auth.currentUser?.email;
@@ -185,30 +165,41 @@ document.addEventListener("DOMContentLoaded", () => {
       const q = query(
         collection(db, "notificaciones"),
         where("leida", "==", false),
+        orderBy("fecha", "desc"),
       );
       const snapshot = await getDocs(q);
-      const paraMostrar = snapshot.docs.filter(
-        (d) => d.data().creadoPorEmail !== userEmail,
-      );
+      const paraMostrar = snapshot.docs
+        .filter((d) => d.data().creadoPorEmail !== userEmail)
+        .sort(
+          (a, b) =>
+            (b.data().fecha?.seconds || 0) - (a.data().fecha?.seconds || 0),
+        );
 
       const notifList = document.getElementById("notifList");
       if (notifList) {
         notifList.innerHTML =
           paraMostrar.length === 0
-            ? "<li style='color:#888; text-align:center;'>No hay novedades</li>"
+            ? "<li style='color:#888; text-align:center; padding:10px;'>Sin novedades</li>"
             : "";
         paraMostrar.forEach((d) => {
           const data = d.data();
           const li = document.createElement("li");
-          li.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; width:100%;"><span>${data.mensaje}</span><small style="color:#d4af37; margin-left:10px; font-weight:bold;">${formatarHora(data.fecha)}</small></div>`;
+          li.innerHTML = `<div style="padding:10px; border-bottom:1px solid #eee;">
+                            <span>${data.mensaje}</span><br>
+                            <small style="color:#d4af37;">${formatarHora(data.fecha)}</small>
+                          </div>`;
           notifList.appendChild(li);
         });
       }
 
-      const updatePromises = snapshot.docs.map((d) =>
-        updateDoc(doc(db, "notificaciones", d.id), { leida: true }),
-      );
-      await Promise.all(updatePromises);
+      if (paraMostrar.length > 0) {
+        setTimeout(async () => {
+          const updatePromises = paraMostrar.map((d) =>
+            updateDoc(doc(db, "notificaciones", d.id), { leida: true }),
+          );
+          await Promise.all(updatePromises);
+        }, 3000);
+      }
     } catch (e) {
       console.error("Error:", e);
     }
@@ -234,7 +225,6 @@ document.addEventListener("DOMContentLoaded", () => {
   onAuthStateChanged(auth, (user) => {
     const loginDiv = document.getElementById("loginDiv");
     const appDiv = document.getElementById("appDiv");
-
     if (user) {
       if (loginDiv) loginDiv.style.display = "none";
       if (appDiv) appDiv.style.display = "block";
