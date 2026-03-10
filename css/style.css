@@ -444,3 +444,25 @@ body.dark .fc {
   font-size: 0.85em !important; /* Ajusta el tamaño de fuente para dispositivos móviles */
   padding: 10px 8px !important;
 }
+
+#staffCheckboxes {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Mantiene tus dos columnas */
+  gap: 8px;
+  padding: 10px;
+}
+
+#staffCheckboxes label {
+  display: grid;
+  /* La primera columna mide lo mínimo (el checkbox), la segunda lo que sobre (nombre) */
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px; /* Distancia entre check y nombre */
+  padding: 8px 12px;
+  background: #f8f8f8;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}

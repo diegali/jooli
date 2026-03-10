@@ -1,6 +1,6 @@
 import { initEvents } from "./events.js";
 import { initCalendar } from "./calendar.js";
-import { guardarMozo } from "./staff.js";
+import { guardarMozo, cargarListaStaff } from "./staff.js";
 import { auth, db } from "./auth.js";
 import {
   onAuthStateChanged,
@@ -15,6 +15,7 @@ import {
   updateDoc,
   doc,
   onSnapshot,
+  orderBy,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // --- SECCIONES Y UI ---
@@ -48,6 +49,39 @@ window.showSection = function (sectionId) {
   }
 };
 
+// --- FUNCIÓN PARA CARGAR STAFF EN EL FORMULARIO ---
+export async function renderStaffSelection() {
+  const container = document.getElementById("staffCheckboxes");
+  if (!container) return;
+
+  const q = query(collection(db, "staff"), orderBy("nombre", "asc"));
+
+  try {
+    const querySnapshot = await getDocs(q);
+    container.innerHTML = "";
+
+    if (querySnapshot.empty) {
+      container.innerHTML =
+        "<small style='padding:10px;'>No hay staff cargado</small>";
+      return;
+    }
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      container.innerHTML += `
+        <label>
+          <input type="checkbox" name="staffSelected" value="${doc.id}" 
+                 data-nombre="${data.nombre}" data-tel="${data.telefono}"
+                 style="margin: 0;">
+          ${data.nombre}
+        </label>
+      `;
+    });
+  } catch (e) {
+    console.error("Error cargando staff:", e);
+  }
+}
+
 // --- FUNCIÓN PARA MOSTRAR NOMBRE DE USUARIO ---
 function updateUserNameDisplay() {
   const userNameDisplay = document.getElementById("userNameDisplay");
@@ -66,6 +100,31 @@ function updateUserNameDisplay() {
 
 // --- INICIALIZACIÓN ---
 document.addEventListener("DOMContentLoaded", () => {
+  // Escuchador para el botón de mostrar formulario
+  const showFormBtn = document.getElementById("showFormBtn");
+  showFormBtn?.addEventListener("click", () => {
+    renderStaffSelection();
+  });
+
+  // Delegación de eventos para el botón de WhatsApp (funciona siempre)
+  document.addEventListener("click", (e) => {
+    if (e.target && e.target.id === "whatsappBtn") {
+      console.log("¡Clic detectado!");
+
+      const evento = {
+        place:
+          document.getElementById("lugarInput")?.value ||
+          "Lugar no especificado",
+        date:
+          document.getElementById("fechaInput")?.value ||
+          "Fecha no especificada",
+        guests: document.getElementById("invitadosInput")?.value || "0",
+        total: document.getElementById("totalInput")?.value || "0",
+        notes: document.getElementById("notasInput")?.value || "Sin notas",
+      };
+    }
+  });
+
   const notifSound = new Audio(
     "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3",
   );
