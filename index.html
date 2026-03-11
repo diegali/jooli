@@ -7,6 +7,7 @@
 
     <link rel="stylesheet" href="./css/style.css?v=1.1" />
     <script type="module" src="./js/main.js?v=1.1"></script>
+    <link rel="icon" href="logoB.png" />
 
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#d4af37" />
@@ -20,7 +21,10 @@
         <img src="./logoB.png" class="logo" alt="Logo" />
       </div>
 
-      <span class="header-title">Agenda de Eventos</span>
+      <div class="header-title">
+        <div class="app-main">CateringDesk</div>
+        <div class="app-sub">Agenda de eventos</div>
+      </div>
 
       <div class="header-right">
         <div
@@ -28,6 +32,7 @@
           style="position: relative; cursor: pointer; margin-right: 15px"
         >
           <span>🔔</span>
+
           <span
             id="notifCount"
             style="
@@ -43,44 +48,48 @@
             "
             >0</span
           >
-        </div>
-        <div
-          id="notificationPanel"
-          style="
-            display: none;
-            position: absolute;
-            top: 50px;
-            right: 20px;
-            width: 300px;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            padding: 15px;
-            z-index: 1000;
-          "
-        >
-          <h4
+
+          <!-- PANEL DE NOTIFICACIONES (AHORA DENTRO DEL WRAPPER) -->
+          <div
+            id="notificationPanel"
             style="
-              margin: 0 0 10px 0;
-              color: #333;
-              border-bottom: 1px solid #eee;
-              padding-bottom: 5px;
+              display: none;
+              position: fixed;
+              top: 80px;
+              right: 0;
+              width: 300px;
+              background: #fff;
+              border: 1px solid #ddd;
+              border-radius: 12px;
+              box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+              padding: 15px;
+              z-index: 99999;
             "
           >
-            Notificaciones
-          </h4>
-          <ul
-            id="notifList"
-            style="
-              list-style: none;
-              padding: 0;
-              margin: 0;
-              max-height: 300px;
-              overflow-y: auto;
-            "
-          ></ul>
+            <h4
+              style="
+                margin: 0 0 10px 0;
+                color: #333;
+                border-bottom: 1px solid #eee;
+                padding-bottom: 5px;
+              "
+            >
+              Notificaciones
+            </h4>
+
+            <ul
+              id="notifList"
+              style="
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                max-height: 300px;
+                overflow-y: auto;
+              "
+            ></ul>
+          </div>
         </div>
+
         <div
           class="user-info-container"
           style="text-align: center; margin-bottom: 0px"
@@ -352,7 +361,33 @@
           <label>Notas</label><textarea id="notes"></textarea>
         </div>
         <div style="margin-top: 10px">
+          <div class="form-group" style="margin-top: 15px">
+            <label><strong>Asignar Staff:</strong></label>
+            <div
+              id="staffCheckboxes"
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                background: #fff;
+                padding: 10px;
+                border-radius: 8px;
+                border: 1px solid #ddd;
+                max-height: 150px;
+                overflow-y: auto;
+              "
+            >
+              <small style="color: #999">Cargando staff...</small>
+            </div>
+          </div>
           <button id="addBtn">Guardar Evento</button>
+          <button
+            type="button"
+            id="whatsappBtn"
+            style="background: #25d366; color: white"
+          >
+            Enviar info a Mozos 📱
+          </button>
           <button id="updateBtn" style="display: none">
             Actualizar Evento
           </button>
@@ -438,6 +473,51 @@
             padding-top: 10px;
           "
         ></div>
+      </div>
+    </div>
+    <div
+      id="modalEnvio"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+      "
+    >
+      <div
+        style="
+          background: white;
+          padding: 20px;
+          border-radius: 10px;
+          width: 90%;
+          max-width: 400px;
+          max-height: 80vh;
+          overflow-y: auto;
+        "
+      >
+        <h3>Bandeja de Salida (WhatsApp)</h3>
+        <div id="listaEnvioContenido"></div>
+        <button
+          onclick="document.getElementById('modalEnvio').style.display = 'none'"
+          style="
+            width: 100%;
+            margin-top: 15px;
+            padding: 10px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+          "
+        >
+          Cerrar
+        </button>
       </div>
     </div>
   </body>

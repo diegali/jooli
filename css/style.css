@@ -21,6 +21,7 @@ header {
   padding: 10px 20px;
   background: #000;
   border-bottom: 2px solid var(--gold);
+  position: relative;
 }
 
 .logo-container,
@@ -372,33 +373,6 @@ body.dark .fc {
   font-weight: bold;
 }
 
-#notificationPanel {
-  position: absolute;
-  top: 45px;
-  right: 10px;
-  width: 250px;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  display: none;
-  /* Oculto por defecto */
-  z-index: 1000;
-  padding: 10px;
-}
-
-#notificationPanel ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-#notificationPanel li {
-  padding: 8px;
-  border-bottom: 1px solid #eee;
-  font-size: 0.9em;
-}
-
 .nav-btn {
   padding: 10px 20px;
   border: 1px solid #d4af37;
@@ -424,23 +398,78 @@ body.dark .fc {
   background: #fdf5d6;
 }
 
-#notificationPanel {
-  transition: opacity 0.3s ease;
-}
-
-#notifList li {
-  padding: 10px;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 0.9em;
-  color: #555;
-}
-
-#notifList li:hover {
-  background: #f9f9f9;
-}
-
 .nav-btn,
 #btn-staff {
   font-size: 0.85em !important; /* Ajusta el tamaño de fuente para dispositivos móviles */
   padding: 10px 8px !important;
+}
+
+#staffCheckboxes {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Mantiene tus dos columnas */
+  gap: 8px;
+  padding: 10px;
+}
+
+#staffCheckboxes label {
+  display: grid;
+  /* La primera columna mide lo mínimo (el checkbox), la segunda lo que sobre (nombre) */
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px; /* Distancia entre check y nombre */
+  padding: 8px 12px;
+  background: #f8f8f8;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.app-main {
+  font-size: 22px;
+  font-weight: bold;
+  color: #f4c542;
+  line-height: 1.1;
+}
+
+.app-sub {
+  font-size: 12px;
+  color: #cccccc;
+}
+/* Resaltar el día de hoy en el calendario */
+.fc-day-today {
+  border: 2px solid #d4af37 !important;
+  border-radius: 6px;
+}
+
+/* Limpiamos y usamos una clase para el control */
+#notificationPanel {
+  position: absolute;
+  top: 55px; /* Justo debajo de la campana */
+  right: 0;
+  width: 300px;
+  background: white !important;
+  border: 1px solid #d4af37 !important;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  z-index: 99999 !important; /* Por encima de todo */
+  display: none; /* Oculto por defecto */
+}
+
+/* Esta clase es la que encenderá el panel */
+#notificationPanel.active {
+  display: block !important;
+}
+
+#notifList li {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  color: #333 !important; /* Texto oscuro para que se vea */
+  font-size: 0.9em;
+  background: white;
+}
+
+.mostrar-panel {
+  display: block !important;
 }

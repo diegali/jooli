@@ -1,4 +1,5 @@
 import { db, auth } from "./auth.js";
+import { renderStaffSelection } from "./main.js";
 import {
   collection,
   onSnapshot,
@@ -6,8 +7,9 @@ import {
   orderBy,
   addDoc,
   updateDoc,
+  arrayUnion,
   doc,
-  serverTimestamp
+  serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 let editingId = null;
@@ -26,8 +28,8 @@ function getCurrentUserName() {
 function formatDateShort(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr + "T00:00:00");
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
   const aa = String(d.getFullYear()).slice(-2);
   return `${dd}/${mm}/${aa}`;
 }
@@ -38,8 +40,9 @@ export function resetForm() {
   if (form) {
     form.style.display = "none";
     form.querySelectorAll("input, select, textarea").forEach((el) => {
-      // Nota: Si el select de invoiceType debe resetearse, quítalo de este array
-      if (!["type", "status", "paid", "invoiceType"].includes(el.id)) el.value = "";
+      if (!["type", "status", "paid", "invoiceType"].includes(el.id))
+        el.value = "";
+      if (el.type === "checkbox") el.checked = false;
     });
   }
   document.getElementById("formTitle").innerText = "Nuevo Evento";
@@ -50,9 +53,13 @@ export function resetForm() {
 }
 
 export function initEvents() {
-  document.getElementById("cancelFormBtn")?.addEventListener("click", resetForm);
+  document
+    .getElementById("cancelFormBtn")
+    ?.addEventListener("click", resetForm);
   document.getElementById("addBtn")?.addEventListener("click", saveEvent);
-  document.getElementById("updateBtn")?.addEventListener("click", updateExistingEvent);
+  document
+    .getElementById("updateBtn")
+    ?.addEventListener("click", updateExistingEvent);
 
   document.getElementById("showFormBtn")?.addEventListener("click", () => {
     resetForm();
@@ -69,6 +76,13 @@ export function initEvents() {
     }
   });
 
+  document.getElementById("whatsappBtn")?.addEventListener("click", () => {
+    const eventoActual = editingId
+      ? window.allEventsData.find((e) => e.id === editingId)
+      : getFormData();
+    prepararBandejaDeSalida(eventoActual);
+  });
+
   loadEvents();
   initSearch();
 }
@@ -78,6 +92,7 @@ async function saveEvent() {
   const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
   eventData.ultimoCambioPor = userName;
+  eventData.mensajesEnviados = [];
 
   try {
     await addDoc(collection(db, "events"), eventData);
@@ -85,7 +100,7 @@ async function saveEvent() {
       mensaje: `${userName} creó el evento "${eventData.client}" del ${formatDateShort(eventData.date)}`,
       leida: false,
       creadoPorEmail: userEmail,
-      fecha: serverTimestamp()
+      fecha: serverTimestamp(),
     });
     resetForm();
   } catch (error) {
@@ -106,7 +121,7 @@ async function updateExistingEvent() {
       mensaje: `${userName} modificó el evento "${eventData.client}" del ${formatDateShort(eventData.date)}`,
       leida: false,
       creadoPorEmail: userEmail,
-      fecha: serverTimestamp()
+      fecha: serverTimestamp(),
     });
     resetForm();
   } catch (error) {
@@ -115,6 +130,9 @@ async function updateExistingEvent() {
 }
 
 function getFormData() {
+  const selectedStaff = Array.from(
+    document.querySelectorAll('input[name="staffSelected"]:checked'),
+  ).map((cb) => cb.value);
   return {
     invoiceType: document.getElementById("invoiceType").value,
     date: document.getElementById("date").value,
@@ -129,6 +147,7 @@ function getFormData() {
     paid: document.getElementById("paid").value === "true",
     invoiceNumber: document.getElementById("invoiceNumber").value,
     notes: document.getElementById("notes").value,
+    staffAsignado: selectedStaff,
   };
 }
 
@@ -136,16 +155,27 @@ function loadEvents() {
   const q = query(collection(db, "events"), orderBy("date"));
   onSnapshot(q, (snap) => {
     window.allEventsData = [];
-    snap.forEach((d) => {
-      window.allEventsData.push({ ...d.data(), id: d.id });
-    });
+    snap.forEach((d) => window.allEventsData.push({ ...d.data(), id: d.id }));
     renderFilteredEvents(window.allEventsData);
   });
 }
 
-export function fillFormForEdit(e, id) {
+export async function fillFormForEdit(e, id) {
   editingId = id;
-  const fields = ["date", "type", "client", "cuit", "place", "guests", "total", "deposit", "status", "invoiceNumber", "notes", "invoiceType"];
+  const fields = [
+    "date",
+    "type",
+    "client",
+    "cuit",
+    "place",
+    "guests",
+    "total",
+    "deposit",
+    "status",
+    "invoiceNumber",
+    "notes",
+    "invoiceType",
+  ];
   fields.forEach((f) => {
     const el = document.getElementById(f);
     if (el) el.value = e[f] || (f === "invoiceType" ? "B/C" : "");
@@ -153,6 +183,13 @@ export function fillFormForEdit(e, id) {
   const paidEl = document.getElementById("paid");
   if (paidEl) paidEl.value = e.paid ? "true" : "false";
 
+  await renderStaffSelection();
+  if (e.staffAsignado) {
+    e.staffAsignado.forEach((idMozo) => {
+      const checkbox = document.querySelector(`input[value="${idMozo}"]`);
+      if (checkbox) checkbox.checked = true;
+    });
+  }
   document.getElementById("formTitle").innerText = "Editando Evento";
   document.getElementById("updateBtn").style.display = "inline-block";
   document.getElementById("addBtn").style.display = "none";
@@ -169,7 +206,9 @@ function initSearch() {
   searchInput.addEventListener("input", (e) => {
     const term = e.target.value.toLowerCase();
     document.querySelectorAll(".card").forEach((card) => {
-      card.style.display = card.innerText.toLowerCase().includes(term) ? "" : "none";
+      card.style.display = card.innerText.toLowerCase().includes(term)
+        ? ""
+        : "none";
     });
   });
 }
@@ -178,7 +217,9 @@ function updateClientDatalist(events) {
   const datalist = document.getElementById("clientList");
   if (!datalist) return;
   const clients = [...new Set(events.map((e) => e.client))].sort();
-  datalist.innerHTML = clients.map((name) => `<option value="${name}">`).join("");
+  datalist.innerHTML = clients
+    .map((name) => `<option value="${name}">`)
+    .join("");
 }
 
 function updateStats(events) {
@@ -201,7 +242,6 @@ export function renderFilteredEvents(events) {
   const today = new Date().toISOString().split("T")[0];
   const upcomingGroups = {};
   const pastGroups = {};
-
   events.forEach((e) => {
     const monthKey = getMonthLabel(e.date);
     const isPast = e.date < today;
@@ -213,7 +253,6 @@ export function renderFilteredEvents(events) {
       upcomingGroups[monthKey].push(createCard(e, e.id));
     }
   });
-
   updateStats(events);
   updateClientDatalist(events);
   renderGroup(upcomingGroups, "📅 Próximos Eventos", "#27ae60");
@@ -231,11 +270,18 @@ function renderGroup(groups, sectionTitle, color) {
 }
 
 function createCard(e, id) {
-  const colors = { Presupuestado: "#f1c40f", "Seña pagada": "#e67e22", Confirmado: "#27ae60", Realizado: "#2980b9", Cancelado: "#c0392b" };
+  const colors = {
+    Presupuestado: "#f1c40f",
+    "Seña pagada": "#e67e22",
+    Confirmado: "#27ae60",
+    Realizado: "#2980b9",
+    Cancelado: "#c0392b",
+  };
   const statusStyle = `background:${colors[e.status] || "#666"}; color:white; padding:4px 10px; border-radius:12px; font-size:0.75em; font-weight:bold; display:inline-block; min-width:80px; text-align:center;`;
-
-  // Aquí agregamos la variable invoiceIndicator
-  const invoiceIndicator = e.invoiceType === "A" ? `<span style="background:#34495e; color:white; padding:2px 6px; border-radius:4px; font-size:0.7em; margin-left:5px;">FACT A</span>` : "";
+  const invoiceIndicator =
+    e.invoiceType === "A"
+      ? `<span style="background:#34495e; color:white; padding:2px 6px; border-radius:4px; font-size:0.7em; margin-left:5px;">FACT A</span>`
+      : "";
 
   return `
     <div class="card" data-id="${id}" style="cursor:pointer; border:1px solid #ddd; padding:12px; border-radius:8px; margin-bottom:10px; background:white;">
@@ -256,7 +302,20 @@ function createCard(e, id) {
 
 function getMonthLabel(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
-  const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  const months = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
   return `${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
@@ -266,12 +325,60 @@ function formatDate(dateStr) {
   return d.toLocaleDateString("es-AR");
 }
 
-window.addEventListener("filterChanged", (e) => {
-  const selectedMonth = e.detail;
-  if (!selectedMonth) {
-    renderFilteredEvents(window.allEventsData);
+export function prepararBandejaDeSalida(evento) {
+  const container = document.getElementById("staffCheckboxes");
+  const checkboxes = container
+    ? Array.from(
+        container.querySelectorAll('input[name="staffSelected"]:checked'),
+      )
+    : [];
+  if (checkboxes.length === 0) {
+    alert("No seleccionaste ningún mozo.");
     return;
   }
-  const filtered = window.allEventsData.filter((ev) => ev.date.startsWith(selectedMonth));
-  renderFilteredEvents(filtered);
-});
+  const mensaje = `Hola, te asignamos al evento:\n📍 Lugar: ${evento.place}\n📅 Fecha: ${evento.date}\n👥 Invitados: ${evento.guests}\n💰 Total: $${evento.total}\nNotas: ${evento.notes}`;
+  const yaEnviadosEnDB = evento.mensajesEnviados || [];
+  window.bandejaSalida = checkboxes.map((cb) => ({
+    nombre: cb.parentElement.innerText.trim(),
+    telefono: cb.dataset.tel?.replace(/\D/g, ""),
+    mensaje: encodeURIComponent(mensaje),
+    enviado: yaEnviadosEnDB.includes(cb.parentElement.innerText.trim()),
+  }));
+  renderizarModal();
+}
+
+function renderizarModal() {
+  const listaEnvio = document.getElementById("listaEnvioContenido");
+  const modal = document.getElementById("modalEnvio");
+  if (listaEnvio && modal) {
+    listaEnvio.innerHTML = window.bandejaSalida
+      .map(
+        (item, index) => `
+      <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+        <span>${item.nombre} ${item.enviado ? "✅" : ""}</span>
+        ${item.enviado ? '<span style="color:#25d366; font-size:0.9em; font-weight:bold;">Enviado</span>' : `<button onclick="window.ejecutarEnvio(${index})" style="background:#25d366; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Enviar</button>`}
+      </div>
+    `,
+      )
+      .join("");
+    modal.style.display = "flex";
+  }
+}
+
+window.ejecutarEnvio = async function (index) {
+  const item = window.bandejaSalida[index];
+  if (item && item.telefono && editingId) {
+    window.location.href = `whatsapp://send?phone=${item.telefono}&text=${item.mensaje}`;
+    try {
+      await updateDoc(doc(db, "events", editingId), {
+        mensajesEnviados: arrayUnion(item.nombre),
+      });
+      window.bandejaSalida[index].enviado = true;
+      renderizarModal();
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  } else {
+    alert("Guarda el evento primero.");
+  }
+};
