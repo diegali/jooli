@@ -53,19 +53,27 @@ export function resetForm() {
 }
 
 export function initEvents() {
-  document
-    .getElementById("cancelFormBtn")
-    ?.addEventListener("click", resetForm);
+  document.getElementById("cancelFormBtn")?.addEventListener("click", resetForm);
   document.getElementById("addBtn")?.addEventListener("click", saveEvent);
-  document
-    .getElementById("updateBtn")
-    ?.addEventListener("click", updateExistingEvent);
+  document.getElementById("updateBtn")?.addEventListener("click", updateExistingEvent);
 
   document.getElementById("showFormBtn")?.addEventListener("click", () => {
     resetForm();
     const form = document.getElementById("eventFormContainer");
     if (form) form.style.display = "block";
   });
+
+  // Listener para el nuevo Panel de Gestión de Staff
+  document.getElementById("btnGestionarStaff")?.addEventListener("click", () => {
+    // Si editingId existe, significa que el usuario está en modo "edición" 
+    // y el evento ya está en Firestore.
+    if (editingId) {
+        // Esta función viene de main.js y abre el modal
+        window.abrirModalGestionStaff(editingId);
+    } else {
+        alert("Para gestionar el staff, primero guarda el evento o selecciónalo desde la lista.");
+    }
+});
 
   document.getElementById("eventsList")?.addEventListener("click", (e) => {
     const card = e.target.closest(".card");
@@ -162,20 +170,7 @@ function loadEvents() {
 
 export async function fillFormForEdit(e, id) {
   editingId = id;
-  const fields = [
-    "date",
-    "type",
-    "client",
-    "cuit",
-    "place",
-    "guests",
-    "total",
-    "deposit",
-    "status",
-    "invoiceNumber",
-    "notes",
-    "invoiceType",
-  ];
+  const fields = ["date", "type", "client", "cuit", "place", "guests", "total", "deposit", "status", "invoiceNumber", "notes", "invoiceType"];
   fields.forEach((f) => {
     const el = document.getElementById(f);
     if (el) el.value = e[f] || (f === "invoiceType" ? "B/C" : "");
@@ -206,9 +201,7 @@ function initSearch() {
   searchInput.addEventListener("input", (e) => {
     const term = e.target.value.toLowerCase();
     document.querySelectorAll(".card").forEach((card) => {
-      card.style.display = card.innerText.toLowerCase().includes(term)
-        ? ""
-        : "none";
+      card.style.display = card.innerText.toLowerCase().includes(term) ? "" : "none";
     });
   });
 }
@@ -217,9 +210,7 @@ function updateClientDatalist(events) {
   const datalist = document.getElementById("clientList");
   if (!datalist) return;
   const clients = [...new Set(events.map((e) => e.client))].sort();
-  datalist.innerHTML = clients
-    .map((name) => `<option value="${name}">`)
-    .join("");
+  datalist.innerHTML = clients.map((name) => `<option value="${name}">`).join("");
 }
 
 function updateStats(events) {
@@ -270,18 +261,9 @@ function renderGroup(groups, sectionTitle, color) {
 }
 
 function createCard(e, id) {
-  const colors = {
-    Presupuestado: "#f1c40f",
-    "Seña pagada": "#e67e22",
-    Confirmado: "#27ae60",
-    Realizado: "#2980b9",
-    Cancelado: "#c0392b",
-  };
+  const colors = { Presupuestado: "#f1c40f", "Seña pagada": "#e67e22", Confirmado: "#27ae60", Realizado: "#2980b9", Cancelado: "#c0392b" };
   const statusStyle = `background:${colors[e.status] || "#666"}; color:white; padding:4px 10px; border-radius:12px; font-size:0.75em; font-weight:bold; display:inline-block; min-width:80px; text-align:center;`;
-  const invoiceIndicator =
-    e.invoiceType === "A"
-      ? `<span style="background:#34495e; color:white; padding:2px 6px; border-radius:4px; font-size:0.7em; margin-left:5px;">FACT A</span>`
-      : "";
+  const invoiceIndicator = e.invoiceType === "A" ? `<span style="background:#34495e; color:white; padding:2px 6px; border-radius:4px; font-size:0.7em; margin-left:5px;">FACT A</span>` : "";
 
   return `
     <div class="card" data-id="${id}" style="cursor:pointer; border:1px solid #ddd; padding:12px; border-radius:8px; margin-bottom:10px; background:white;">
@@ -302,20 +284,7 @@ function createCard(e, id) {
 
 function getMonthLabel(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
-  const months = [
-    "Enero",
-    "Febrero",
-    "Marzo",
-    "Abril",
-    "Mayo",
-    "Junio",
-    "Julio",
-    "Agosto",
-    "Septiembre",
-    "Octubre",
-    "Noviembre",
-    "Diciembre",
-  ];
+  const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
   return `${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
@@ -326,59 +295,126 @@ function formatDate(dateStr) {
 }
 
 export function prepararBandejaDeSalida(evento) {
+  const place = evento.place || "Sin lugar";
+  const date = evento.date || "Sin fecha";
+  const guests = evento.guests || "0";
+  const total = evento.total || "0";
+  const notes = evento.notes || "Sin notas";
+
   const container = document.getElementById("staffCheckboxes");
-  const checkboxes = container
-    ? Array.from(
-        container.querySelectorAll('input[name="staffSelected"]:checked'),
-      )
-    : [];
+  const checkboxes = container ? Array.from(container.querySelectorAll('input[name="staffSelected"]:checked')) : [];
+
   if (checkboxes.length === 0) {
     alert("No seleccionaste ningún mozo.");
     return;
   }
-  const mensaje = `Hola, te asignamos al evento:\n📍 Lugar: ${evento.place}\n📅 Fecha: ${evento.date}\n👥 Invitados: ${evento.guests}\n💰 Total: $${evento.total}\nNotas: ${evento.notes}`;
+
+  const mensaje = `Hola, te asignamos al evento:
+📍 Lugar: ${place}
+📅 Fecha: ${date}
+👥 Invitados: ${guests}
+💰 Total: $${total}
+Notas: ${notes}`;
+
   const yaEnviadosEnDB = evento.mensajesEnviados || [];
+
   window.bandejaSalida = checkboxes.map((cb) => ({
     nombre: cb.parentElement.innerText.trim(),
     telefono: cb.dataset.tel?.replace(/\D/g, ""),
-    mensaje: encodeURIComponent(mensaje),
-    enviado: yaEnviadosEnDB.includes(cb.parentElement.innerText.trim()),
+    mensaje: mensaje,
+    enviado: yaEnviadosEnDB.some(m => (typeof m === 'object' ? m.nombre : m) === cb.parentElement.innerText.trim()),
   }));
+
   renderizarModal();
 }
 
 function renderizarModal() {
   const listaEnvio = document.getElementById("listaEnvioContenido");
   const modal = document.getElementById("modalEnvio");
+
   if (listaEnvio && modal) {
-    listaEnvio.innerHTML = window.bandejaSalida
-      .map(
-        (item, index) => `
-      <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-        <span>${item.nombre} ${item.enviado ? "✅" : ""}</span>
-        ${item.enviado ? '<span style="color:#25d366; font-size:0.9em; font-weight:bold;">Enviado</span>' : `<button onclick="window.ejecutarEnvio(${index})" style="background:#25d366; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Enviar</button>`}
+    listaEnvio.innerHTML = `
+      <div style="margin-bottom: 15px; padding: 10px; background: #f0f0f0; border-radius: 8px;">
+        <label><strong>Horario para todos:</strong></label>
+        <div style="display: flex; gap: 10px; margin-top: 5px;">
+          <input type="time" id="globalStart" value="08:00" style="width: 50%;">
+          <input type="time" id="globalEnd" value="16:00" style="width: 50%;">
+        </div>
       </div>
-    `,
-      )
-      .join("");
+      <div id="listaStaffParaEnviar">
+        ${window.bandejaSalida.map((item, index) => `
+          <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+            <span>${item.nombre} ${item.enviado ? "✅" : ""}</span>
+            ${!item.enviado ? `<button onclick="window.ejecutarEnvio(${index})" style="background:#25d366; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Enviar</button>` : '<span style="color:#25d366; font-size:0.9em; font-weight:bold;">Enviado</span>'}
+          </div>
+        `).join("")}
+      </div>
+    `;
     modal.style.display = "flex";
   }
 }
 
 window.ejecutarEnvio = async function (index) {
   const item = window.bandejaSalida[index];
-  if (item && item.telefono && editingId) {
-    window.location.href = `whatsapp://send?phone=${item.telefono}&text=${item.mensaje}`;
+  const horaInicio = document.getElementById("globalStart").value;
+  const horaFin = document.getElementById("globalEnd").value;
+  const evento = window.allEventsData.find((e) => e.id === editingId);
+
+  if (item && item.telefono && evento) {
+    const mensaje = `Hola ${item.nombre}, te convocamos al evento: ${evento.place}.
+Fecha: ${evento.date}
+Horario: ${horaInicio} a ${horaFin}
+
+Responde con el número de la opción:
+1. CONFIRMO asistencia
+2. NO puedo asistir`;
+
+    const url = `https://wa.me/${item.telefono}?text=${encodeURIComponent(mensaje)}`;
+    window.open(url, "_blank");
+
     try {
       await updateDoc(doc(db, "events", editingId), {
-        mensajesEnviados: arrayUnion(item.nombre),
+        mensajesEnviados: arrayUnion({
+          nombre: item.nombre,
+          estado: "pendiente",
+          fechaEnvio: new Date().toISOString(),
+        }),
       });
       window.bandejaSalida[index].enviado = true;
       renderizarModal();
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error al actualizar:", error);
     }
-  } else {
-    alert("Guarda el evento primero.");
   }
+};
+
+window.rotarEstado = async function(eventId, mozoNombre) {
+    const evento = window.allEventsData.find(e => e.id === eventId);
+    if (!evento || !evento.mensajesEnviados) return;
+
+    const mozoIndex = evento.mensajesEnviados.findIndex(m => 
+        (typeof m === 'object' ? m.nombre : m) === mozoNombre
+    );
+
+    if (mozoIndex === -1) return;
+
+    let mozo = evento.mensajesEnviados[mozoIndex];
+    if (typeof mozo === 'string') {
+        mozo = { nombre: mozo, estado: 'pendiente' };
+    }
+
+    const estados = ['pendiente', 'confirmado', 'rechazado'];
+    const currentIndex = estados.indexOf(mozo.estado || 'pendiente');
+    mozo.estado = estados[(currentIndex + 1) % estados.length];
+
+    const nuevoArray = [...evento.mensajesEnviados];
+    nuevoArray[mozoIndex] = mozo;
+
+    try {
+        await updateDoc(doc(db, "events", eventId), {
+            mensajesEnviados: nuevoArray
+        });
+    } catch (e) {
+        console.error("Error al actualizar estado:", e);
+    }
 };
