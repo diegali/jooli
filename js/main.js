@@ -50,50 +50,85 @@ window.showSection = function (sectionId) {
 
 // --- GESTIÓN DE MODAL DE STAFF (NUEVO) ---
 window.abrirModalGestionStaff = async function (eventId) {
-  const evento = window.allEventsData.find(e => e.id === eventId);
+  const evento = window.allEventsData.find((e) => e.id === eventId);
   if (!evento) return;
 
   const modal = document.getElementById("modalGestionStaff");
   const container = document.getElementById("listaGestionStaffContenido");
 
   if (!modal || !container) return;
-  modal.dataset.eventId = eventId
+  modal.dataset.eventId = eventId;
   // Título del modal con el cliente
-  document.getElementById("tituloModalStaff").innerText = `Staff: ${evento.client}`;
+  document.getElementById("tituloModalStaff").innerText =
+    `Staff: ${evento.client}`;
 
   // Renderizado de la lista de mozos asignados y sus estados
   const mensajes = evento.mensajesEnviados || [];
+  const panelSeleccion = document.getElementById("contenedorSeleccionStaff");
+  const seleccionAbierta =
+    panelSeleccion && panelSeleccion.style.display !== "none";
 
   if (mensajes.length === 0) {
-    container.innerHTML = "<p style='text-align:center; color:#666;'>No hay staff con mensajes enviados aún.</p>";
+    container.innerHTML =
+      "<p style='text-align:center; color:#666;'>No hay staff con mensajes enviados aún.</p>";
   } else {
-    container.innerHTML = mensajes.map((m) => {
-      const nombre = typeof m === 'object' ? m.nombre : m;
-      const estado = typeof m === 'object' ? m.estado : 'pendiente';
-      const colores = { pendiente: '#f39c12', confirmado: '#27ae60', rechazado: '#c0392b' };
+    container.innerHTML = mensajes
+      .map((m) => {
+        const nombre = typeof m === "object" ? m.nombre : m;
+        const estado = typeof m === "object" ? m.estado : "pendiente";
+        const whatsappEnviado = m.whatsappEnviado || false;
+        const colores = {
+          pendiente: "#f39c12",
+          confirmado: "#27ae60",
+          rechazado: "#c0392b",
+        };
 
-      return `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 0; border-bottom:1px solid #f9f9f9;">
-            <div style="display: flex; flex-direction: column;">
-                <span style="font-size: 14px; font-weight: 500; color: #333;">${nombre}</span>
-                <span style="font-size: 10px; color: ${colores[estado]}; font-weight: bold; text-transform:uppercase;">${estado}</span>
+        return `
+          <div class="staff-item">
+
+            <div class="staff-info">
+                <span class="staff-name">${nombre}</span>
+                <span class="staff-status status-${estado}">${estado}</span>
             </div>
-            
-            <div style="display:flex; gap: 15px; align-items:center;">
-                <button onclick="window.rotarEstado('${eventId}', '${nombre}')" 
-                        style="background:none; border:none; cursor:pointer; color:#ccc; font-size: 14px;" 
-                        title="Cambiar estado">🔄</button>
-                
-                <button onclick="window.quitarStaff('${eventId}', '${nombre}')" 
-                        style="background:none; border:none; cursor:pointer; color:#ccc; font-size: 18px;" 
-                        title="Quitar">×</button>
-            </div>
-        </div>
-    `;
-    }).join("");
+
+            <div class="staff-actions">
+
+          <button class="btn-icon"
+          onclick="window.rotarEstado('${eventId}','${nombre}')"
+          ${seleccionAbierta ? "disabled" : ""}
+          title="Cambiar estado">🔄</button>
+
+          <button class="btn-icon wa"
+          onclick="window.enviarWhatsApp('${eventId}','${nombre}')"
+          title="Enviar WhatsApp">
+          ${whatsappEnviado ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-brands fa-whatsapp"></i>'}
+          </button>
+
+          <button class="btn-icon danger"
+          onclick="window.quitarStaff('${eventId}','${nombre}')"
+          ${seleccionAbierta ? "disabled" : ""}
+          title="Quitar">✕</button>
+
+          </div>
+
+          </div>
+`;
+      })
+      .join("");
   }
 
   modal.style.display = "flex";
+};
+
+window.cerrarModalGestionStaff = function () {
+  const modal = document.getElementById("modalGestionStaff");
+  const panel = document.getElementById("contenedorSeleccionStaff");
+  const boton = document.getElementById("btnAbrirSeleccion");
+
+  if (panel) panel.style.display = "none";
+  if (boton) boton.innerText = "+ Agregar";
+
+  modal.style.display = "none";
 };
 
 // --- RENDER SELECCIÓN EN FORMULARIO ---
@@ -106,7 +141,8 @@ export async function renderStaffSelection() {
     const querySnapshot = await getDocs(q);
     container.innerHTML = "";
     if (querySnapshot.empty) {
-      container.innerHTML = "<small style='padding:10px;'>No hay staff cargado</small>";
+      container.innerHTML =
+        "<small style='padding:10px;'>No hay staff cargado</small>";
       return;
     }
     querySnapshot.forEach((doc) => {
@@ -143,11 +179,13 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("click", (e) => {
     const modalStaff = document.getElementById("modalGestionStaff");
     const modalEnvio = document.getElementById("modalEnvio");
-    if (e.target === modalStaff) modalStaff.style.display = "none";
+    if (e.target === modalStaff) window.cerrarModalGestionStaff();
     if (e.target === modalEnvio) modalEnvio.style.display = "none";
   });
 
-  const notifSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3");
+  const notifSound = new Audio(
+    "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3",
+  );
   let inicializado = false;
   let cantidadAnterior = 0;
   let isProcessing = false;
@@ -163,7 +201,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const estaAbierto = notifPanel.style.display === "block";
       notifPanel.style.display = estaAbierto ? "none" : "block";
       if (!estaAbierto) marcarNotificacionesComoLeidas();
-      setTimeout(() => { isProcessing = false; }, 300);
+      setTimeout(() => {
+        isProcessing = false;
+      }, 300);
     };
   }
 
@@ -176,19 +216,26 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Lógica de Notificaciones ---
   function formatarHora(timestamp) {
     if (!timestamp) return "";
-    return timestamp.toDate().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    return timestamp
+      .toDate()
+      .toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
   }
 
   function iniciarEscuchadorNotificaciones() {
     const userEmail = auth.currentUser?.email;
     const countEl = document.getElementById("notifCount");
-    const q = query(collection(db, "notificaciones"), where("leida", "==", false));
+    const q = query(
+      collection(db, "notificaciones"),
+      where("leida", "==", false),
+    );
 
     onSnapshot(q, (snapshot) => {
-      const filtradas = snapshot.docs.filter((d) => d.data().creadoPorEmail !== userEmail);
+      const filtradas = snapshot.docs.filter(
+        (d) => d.data().creadoPorEmail !== userEmail,
+      );
       const cantidadActual = filtradas.length;
       if (inicializado && cantidadActual > cantidadAnterior) {
-        notifSound.play().catch(() => { });
+        notifSound.play().catch(() => {});
       }
       if (countEl) {
         countEl.innerText = cantidadActual;
@@ -202,15 +249,25 @@ document.addEventListener("DOMContentLoaded", () => {
   async function marcarNotificacionesComoLeidas() {
     const userEmail = auth.currentUser?.email;
     try {
-      const q = query(collection(db, "notificaciones"), where("leida", "==", false), orderBy("fecha", "desc"));
+      const q = query(
+        collection(db, "notificaciones"),
+        where("leida", "==", false),
+        orderBy("fecha", "desc"),
+      );
       const snapshot = await getDocs(q);
       const paraMostrar = snapshot.docs
         .filter((d) => d.data().creadoPorEmail !== userEmail)
-        .sort((a, b) => (b.data().fecha?.seconds || 0) - (a.data().fecha?.seconds || 0));
+        .sort(
+          (a, b) =>
+            (b.data().fecha?.seconds || 0) - (a.data().fecha?.seconds || 0),
+        );
 
       const notifList = document.getElementById("notifList");
       if (notifList) {
-        notifList.innerHTML = paraMostrar.length === 0 ? "<li style='color:#888; text-align:center; padding:10px;'>Sin novedades</li>" : "";
+        notifList.innerHTML =
+          paraMostrar.length === 0
+            ? "<li style='color:#888; text-align:center; padding:10px;'>Sin novedades</li>"
+            : "";
         paraMostrar.forEach((d) => {
           const data = d.data();
           const li = document.createElement("li");
@@ -224,11 +281,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (paraMostrar.length > 0) {
         setTimeout(async () => {
-          const updatePromises = paraMostrar.map((d) => updateDoc(doc(db, "notificaciones", d.id), { leida: true }));
+          const updatePromises = paraMostrar.map((d) =>
+            updateDoc(doc(db, "notificaciones", d.id), { leida: true }),
+          );
           await Promise.all(updatePromises);
         }, 3000);
       }
-    } catch (e) { console.error("Error:", e); }
+    } catch (e) {
+      console.error("Error:", e);
+    }
   }
 
   // --- Auth ---
@@ -236,8 +297,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const email = document.getElementById("email")?.value;
     const pass = document.getElementById("password")?.value;
     if (email && pass) {
-      try { await signInWithEmailAndPassword(auth, email, pass); }
-      catch (e) { alert("Error: " + e.message); }
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch (e) {
+        alert("Error: " + e.message);
+      }
     }
   });
 
@@ -267,120 +331,163 @@ document.addEventListener("DOMContentLoaded", () => {
 // --- LÓGICA DE ASIGNACIÓN DENTRO DEL MODAL ---
 
 // 1. Mostrar/Ocultar el panel de selección de mozos
-document.getElementById("btnAbrirSeleccion")?.addEventListener("click", async () => {
-  const panel = document.getElementById("contenedorSeleccionStaff");
-  const listado = document.getElementById("listadoCheckboxesCompleto");
-  const modal = document.getElementById("modalGestionStaff");
-  const eventId = modal.dataset.eventId;
+document
+  .getElementById("btnAbrirSeleccion")
+  ?.addEventListener("click", async () => {
+    const panel = document.getElementById("contenedorSeleccionStaff");
+    const boton = document.getElementById("btnAbrirSeleccion");
+    const listado = document.getElementById("listadoCheckboxesCompleto");
+    const modal = document.getElementById("modalGestionStaff");
+    const listaStaff = document.getElementById("listaGestionStaffContenido");
 
-  // Obtenemos el evento actual para saber quiénes ya están asignados
-  const evento = window.allEventsData.find(e => e.id === eventId);
-  const staffYaAsignado = evento.mensajesEnviados ? evento.mensajesEnviados.map(m => m.nombre) : [];
+    const eventId = modal.dataset.eventId;
 
-  if (panel.style.display === "none") {
-    const q = query(collection(db, "staff"), orderBy("nombre"));
-    const snapshot = await getDocs(q);
+    // Obtenemos el evento actual
+    const evento = window.allEventsData.find((e) => e.id === eventId);
 
-    listado.innerHTML = "";
-    let hayDisponibles = false;
+    const staffYaAsignado = evento?.mensajesEnviados
+      ? evento.mensajesEnviados.map((m) =>
+          typeof m === "object" ? m.nombre : m
+        )
+      : [];
 
-    snapshot.forEach(docSnap => {
-      const data = docSnap.data();
+    // ABRIR PANEL
+    if (panel.style.display === "none" || panel.style.display === "") {
 
-      // SOLO mostramos si NO está en el array de ya asignados
-      if (!staffYaAsignado.includes(data.nombre)) {
-        hayDisponibles = true;
-        listado.innerHTML += `
-                    <label style="
-        display: flex; 
-        align-items: center; 
-        gap: 15px; 
-        padding: 12px; 
-        border-bottom: 1px solid #f0f0f0; 
-        cursor: pointer;
-        transition: background 0.2s;">
-        
-        <input type="checkbox" class="check-staff-asignar" 
-               data-nombre="${data.nombre}" data-tel="${data.telefono}"
-               style="width: 18px; height: 18px; cursor: pointer;">
-        
-        <span style="font-size: 15px; font-weight: 500; color: #444;">${data.nombre}</span>
-    </label>`;
+      const q = query(collection(db, "staff"), orderBy("nombre"));
+      const snapshot = await getDocs(q);
+
+      listado.innerHTML = "";
+      let hayDisponibles = false;
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+
+        if (!staffYaAsignado.includes(data.nombre)) {
+          hayDisponibles = true;
+
+          listado.innerHTML += `
+<label style="
+  display:flex;
+  align-items:center;
+  gap:15px;
+  padding:12px;
+  border-bottom:1px solid #f0f0f0;
+  cursor:pointer;
+  transition:background 0.2s;
+">
+
+<input type="checkbox"
+class="check-staff-asignar"
+data-nombre="${data.nombre}"
+data-tel="${data.telefono}"
+style="width:18px;height:18px;cursor:pointer;">
+
+<span style="font-size:15px;font-weight:500;color:#444;">
+${data.nombre}
+</span>
+
+</label>
+`;
+        }
+      });
+
+      if (!hayDisponibles) {
+        listado.innerHTML =
+          "<p style='padding:10px;color:#888;'>Todos los mozos ya han sido asignados a este evento.</p>";
       }
-    });
 
-    if (!hayDisponibles) {
-      listado.innerHTML = "<p style='padding:10px; color:#888;'>Todos los mozos ya han sido asignados a este evento.</p>";
+      panel.style.display = "block";
+      boton.innerText = "Cerrar";
+
+      // DESACTIVAR lista de staff actual
+      listaStaff.classList.add("staff-disabled");
+
+    } 
+    
+    // CERRAR PANEL
+    else {
+
+      panel.style.display = "none";
+      boton.innerText = "+ Agregar personal";
+
+      // VOLVER A ACTIVAR lista
+      listaStaff.classList.remove("staff-disabled");
     }
-
-    panel.style.display = "block";
-  } else {
-    panel.style.display = "none";
-  }
-});
+  });
 
 // 2. Guardar la selección en el evento y abrir convocatoria
-document.getElementById("btnConfirmarAsignacion")?.addEventListener("click", async () => {
-  const modal = document.getElementById("modalGestionStaff");
-  const eventId = modal.dataset.eventId;
+document
+  .getElementById("btnConfirmarAsignacion")
+  ?.addEventListener("click", async () => {
+    const modal = document.getElementById("modalGestionStaff");
+    const eventId = modal.dataset.eventId;
 
-  if (!eventId) {
-    console.error("Error: eventId no definido en el modal.");
-    return;
-  }
+    if (!eventId) {
+      console.error("Error: eventId no definido en el modal.");
+      return;
+    }
 
-  const checks = document.querySelectorAll(".check-staff-asignar:checked");
+    const checks = document.querySelectorAll(".check-staff-asignar:checked");
 
-  if (checks.length === 0) return alert("Seleccioná al menos a alguien.");
+    if (checks.length === 0) return alert("Seleccioná al menos a alguien.");
 
-  const nuevosAsignados = Array.from(checks).map(c => ({
-    nombre: c.dataset.nombre,
-    telefono: c.dataset.tel,
-    estado: 'pendiente'
-  }));
+    const nuevosAsignados = Array.from(checks).map((c) => ({
+      nombre: c.dataset.nombre,
+      telefono: c.dataset.tel,
+      estado: "pendiente",
+    }));
 
-  // Actualizar Firestore
-  const eventoRef = doc(db, "events", eventId);
-  try {
-    // Obtenemos el evento actual para no borrar a los que ya estaban
-    const evento = window.allEventsData.find(e => e.id === eventId);
-    const staffExistente = evento.mensajesEnviados || [];
+    // Actualizar Firestore
+    const eventoRef = doc(db, "events", eventId);
+    try {
+      // Obtenemos el evento actual para no borrar a los que ya estaban
+      const evento = window.allEventsData.find((e) => e.id === eventId);
+      const staffExistente = evento.mensajesEnviados || [];
 
-    // Filtramos para no duplicar nombres
-    const staffFinal = [...staffExistente];
-    nuevosAsignados.forEach(nuevo => {
-      if (!staffFinal.find(s => s.nombre === nuevo.nombre)) {
-        staffFinal.push(nuevo);
-      }
-    });
+      // Filtramos para no duplicar nombres
+      const staffFinal = [...staffExistente];
+      nuevosAsignados.forEach((nuevo) => {
+        if (!staffFinal.find((s) => s.nombre === nuevo.nombre)) {
+          staffFinal.push(nuevo);
+        }
+      });
 
-    await updateDoc(eventoRef, { mensajesEnviados: staffFinal });
+      await updateDoc(eventoRef, { mensajesEnviados: staffFinal });
 
-    // Actualizar data local y UI
-    evento.mensajesEnviados = staffFinal;
-    document.getElementById("contenedorSeleccionStaff").style.display = "none";
+      // Actualizar data local y UI
+      evento.mensajesEnviados = staffFinal;
+      document.getElementById("contenedorSeleccionStaff").style.display =
+        "none";
+      document.getElementById("btnAbrirSeleccion").innerText = "+ Agregar";
 
-    // Abrir panel de WhatsApp para estos nuevos
-    window.lanzarConvocatoriaWhatsApp(nuevosAsignados, evento);
+      // Abrir panel de WhatsApp para estos nuevos
+      window.lanzarConvocatoriaWhatsApp(nuevosAsignados, evento);
 
-    // Refrescar la lista del modal
-    window.abrirModalGestionStaff(eventId);
+      // Refrescar la lista del modal
+      window.abrirModalGestionStaff(eventId);
+    } catch (e) {
+      console.error("Error asignando staff:", e);
+    }
+    const listaStaff = document.getElementById("listaGestionStaffContenido");
+    const panel = document.getElementById("contenedorSeleccionStaff");
+    const boton = document.getElementById("btnAbrirSeleccion");
 
-  } catch (e) {
-    console.error("Error asignando staff:", e);
-  }
-});
+    panel.style.display = "none";
+    boton.innerText = "+ Agregar personal";
+    listaStaff.classList.remove("staff-disabled");
+  });
 
 window.quitarStaff = async function (eventId, nombreMozo) {
   if (!confirm(`¿Estás seguro de quitar a ${nombreMozo} del evento?`)) return;
 
   const eventoRef = doc(db, "events", eventId);
-  const evento = window.allEventsData.find(e => e.id === eventId);
+  const evento = window.allEventsData.find((e) => e.id === eventId);
 
   try {
     // Filtramos el array para excluir al mozo seleccionado
-    const nuevoStaff = evento.mensajesEnviados.filter(m =>
-      (typeof m === 'object' ? m.nombre : m) !== nombreMozo
+    const nuevoStaff = evento.mensajesEnviados.filter(
+      (m) => (typeof m === "object" ? m.nombre : m) !== nombreMozo,
     );
 
     // Actualizamos Firestore
@@ -389,27 +496,39 @@ window.quitarStaff = async function (eventId, nombreMozo) {
     // Actualizamos localmente y refrescamos el modal
     evento.mensajesEnviados = nuevoStaff;
     window.abrirModalGestionStaff(eventId);
-
   } catch (e) {
     console.error("Error al quitar al staff:", e);
     alert("No se pudo quitar al mozo. Intenta de nuevo.");
   }
 };
 
-// 3. Función auxiliar para mandar WhatsApps
-window.lanzarConvocatoriaWhatsApp = function (staff, evento) {
-  const modal = document.getElementById("modalEnvio");
-  const container = document.getElementById("listaEnvioContenido");
 
-  container.innerHTML = staff.map(s => {
-    const msg = `Hola ${s.nombre}, te escribo de JOOLI. Tenemos evento: ${evento.date} - ${evento.client}. ¿Estás disponible?`;
-    const url = `https://wa.me/${s.telefono}?text=${encodeURIComponent(msg)}`;
-    return `
-            <div style="padding:10px; border-bottom:1px solid #eee;">
-                <strong>${s.nombre}</strong><br>
-                <a href="${url}" target="_blank" class="btn-wa">Enviar WhatsApp</a>
-            </div>`;
-  }).join("");
+window.enviarWhatsApp = async function (eventId, nombreMozo) {
+  const evento = window.allEventsData.find((e) => e.id === eventId);
 
-  modal.style.display = "flex";
+  const mozo = evento.mensajesEnviados.find((m) => m.nombre === nombreMozo);
+
+  if (!mozo) return;
+
+  const mensaje =
+    `Hola ${mozo.nombre}, te escribo de JOOLI. ` +
+    `Tenemos evento el ${evento.date} para ${evento.client}. ` +
+    `¿Estás disponible?`;
+
+  const url = `https://wa.me/${mozo.telefono}?text=${encodeURIComponent(mensaje)}`;
+
+  window.open(url, "_blank");
+
+  // marcar como enviado
+  mozo.whatsappEnviado = true;
+
+  // guardar en firestore
+  const eventoRef = doc(db, "events", eventId);
+
+  await updateDoc(eventoRef, {
+    mensajesEnviados: evento.mensajesEnviados,
+  });
+
+  // refrescar UI
+  window.abrirModalGestionStaff(eventId);
 };

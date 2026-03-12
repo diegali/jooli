@@ -473,3 +473,162 @@ body.dark .fc {
 .mostrar-panel {
   display: block !important;
 }
+
+.staff-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid #eee;
+  animation: staffFadeIn 0.35s ease;
+}
+@keyframes staffFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.staff-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.staff-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+
+.staff-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  width: fit-content;
+  text-transform: uppercase;
+}
+
+.staff-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.status-pendiente {
+  background: #fff3cd;
+  color: #f39c12;
+}
+
+.status-confirmado {
+  background: #eafaf1;
+  color: #27ae60;
+}
+
+.status-rechazado {
+  background: #fdecea;
+  color: #c0392b;
+}
+
+.staff-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-icon {
+  background: #f4f4f4;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-icon:hover {
+  background: #e6e6e6;
+}
+
+.btn-icon.danger:hover {
+  background: #ffe5e5;
+  color: #c0392b;
+}
+
+.staff-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.staff-modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.staff-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-add-staff {
+  background: #d4af37;
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-add-staff:hover {
+  opacity: 0.9;
+}
+
+.btn-add-staff:active {
+  color: white;
+  background: #c29d2e;
+}
+
+.btn-add-staff:focus {
+  color: white;
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #aaa;
+}
+
+.btn-close-modal:hover {
+  color: #333;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-icon.wa {
+  background: transparent;
+  border: none;
+}
+
+.btn-icon.wa i {
+  color: #25D366;
+  font-size: 20px;
+}
+
+.btn-icon.wa:hover i {
+  color: #1ebe5d;
+  transform: scale(1.1);
+}
+
