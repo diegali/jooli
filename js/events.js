@@ -1,5 +1,5 @@
 import { db, auth } from "./auth.js";
-import { renderStaffSelection } from "./main.js";
+import { renderStaffSelection } from "./staff.js";
 import {
   collection,
   onSnapshot,
@@ -7,7 +7,6 @@ import {
   orderBy,
   addDoc,
   updateDoc,
-  arrayUnion,
   doc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -15,101 +14,137 @@ import {
 let editingId = null;
 window.allEventsData = [];
 
+// ===============================
+// HELPERS
+// ===============================
 function getCurrentUserName() {
   const email = auth.currentUser?.email;
+
   const usuariosMap = {
     "almos2712@hotmail.com": "Laura",
     "mariano@a.com": "Mariano",
     "seba@a.com": "Sebastián",
   };
+
   return usuariosMap[email] || email || "Usuario";
 }
 
 function formatDateShort(dateStr) {
   if (!dateStr) return "";
+
   const d = new Date(dateStr + "T00:00:00");
   const dd = String(d.getDate()).padStart(2, "0");
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const aa = String(d.getFullYear()).slice(-2);
+
   return `${dd}/${mm}/${aa}`;
 }
 
+function getMonthLabel(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+
+  const months = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
+
+  return `${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("es-AR");
+}
+
+// ===============================
+// FORMULARIO
+// ===============================
 export function resetForm() {
   editingId = null;
+
   const form = document.getElementById("eventFormContainer");
+
   if (form) {
     form.style.display = "none";
+
     form.querySelectorAll("input, select, textarea").forEach((el) => {
-      if (!["type", "status", "paid", "invoiceType"].includes(el.id))
+      if (!["type", "status", "paid", "invoiceType"].includes(el.id)) {
         el.value = "";
-      if (el.type === "checkbox") el.checked = false;
+      }
+
+      if (el.type === "checkbox") {
+        el.checked = false;
+      }
     });
   }
-  document.getElementById("formTitle").innerText = "Nuevo Evento";
+
+  const formTitle = document.getElementById("formTitle");
   const updateBtn = document.getElementById("updateBtn");
   const addBtn = document.getElementById("addBtn");
+
+  if (formTitle) formTitle.innerText = "Nuevo Evento";
   if (updateBtn) updateBtn.style.display = "none";
   if (addBtn) addBtn.style.display = "inline-block";
 }
 
-export function initEvents() {
-  document.getElementById("cancelFormBtn")?.addEventListener("click", resetForm);
-  document.getElementById("addBtn")?.addEventListener("click", saveEvent);
-  document.getElementById("updateBtn")?.addEventListener("click", updateExistingEvent);
+function getFormData() {
+  const selectedStaff = Array.from(
+    document.querySelectorAll('input[name="staffSelected"]:checked')
+  ).map((cb) => cb.value);
 
-  document.getElementById("showFormBtn")?.addEventListener("click", () => {
-    resetForm();
-    const form = document.getElementById("eventFormContainer");
-    if (form) form.style.display = "block";
-  });
-
-  // Listener para el nuevo Panel de Gestión de Staff
-  document.getElementById("btnGestionarStaff")?.addEventListener("click", () => {
-    // Si editingId existe, significa que el usuario está en modo "edición" 
-    // y el evento ya está en Firestore.
-    if (editingId) {
-        // Esta función viene de main.js y abre el modal
-        window.abrirModalGestionStaff(editingId);
-    } else {
-        alert("Para gestionar el staff, primero guarda el evento o selecciónalo desde la lista.");
-    }
-});
-
-  document.getElementById("eventsList")?.addEventListener("click", (e) => {
-    const card = e.target.closest(".card");
-    if (card) {
-      const id = card.dataset.id;
-      const eventData = window.allEventsData.find((ev) => ev.id === id);
-      if (eventData) fillFormForEdit(eventData, id);
-    }
-  });
-
-  document.getElementById("whatsappBtn")?.addEventListener("click", () => {
-    const eventoActual = editingId
-      ? window.allEventsData.find((e) => e.id === editingId)
-      : getFormData();
-    prepararBandejaDeSalida(eventoActual);
-  });
-
-  loadEvents();
-  initSearch();
+  return {
+    invoiceType: document.getElementById("invoiceType")?.value || "B/C",
+    date: document.getElementById("date")?.value || "",
+    type: document.getElementById("type")?.value || "",
+    client: document.getElementById("client")?.value || "",
+    cuit: document.getElementById("cuit")?.value || "",
+    place: document.getElementById("place")?.value || "",
+    horaInicio: document.getElementById("horaInicio")?.value || "",
+    horaFin: document.getElementById("horaFin")?.value || "",
+    guests: document.getElementById("guests")?.value || "",
+    total: document.getElementById("total")?.value || "",
+    deposit: document.getElementById("deposit")?.value || "",
+    status: document.getElementById("status")?.value || "",
+    paid: document.getElementById("paid")?.value === "true",
+    invoiceNumber: document.getElementById("invoiceNumber")?.value || "",
+    notes: document.getElementById("notes")?.value || "",
+    staffAsignado: selectedStaff,
+  };
 }
 
+// ===============================
+// CRUD EVENTOS
+// ===============================
 async function saveEvent() {
   const eventData = getFormData();
   const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
+
   eventData.ultimoCambioPor = userName;
   eventData.mensajesEnviados = [];
 
   try {
     await addDoc(collection(db, "events"), eventData);
+
     await addDoc(collection(db, "notificaciones"), {
       mensaje: `${userName} creó el evento "${eventData.client}" del ${formatDateShort(eventData.date)}`,
       leida: false,
       creadoPorEmail: userEmail,
       fecha: serverTimestamp(),
     });
+
     resetForm();
   } catch (error) {
     console.error("Error al guardar:", error);
@@ -118,124 +153,166 @@ async function saveEvent() {
 
 async function updateExistingEvent() {
   if (!editingId) return;
+
   const eventData = getFormData();
   const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
+
   eventData.ultimoCambioPor = userName;
 
   try {
     await updateDoc(doc(db, "events", editingId), eventData);
+
     await addDoc(collection(db, "notificaciones"), {
       mensaje: `${userName} modificó el evento "${eventData.client}" del ${formatDateShort(eventData.date)}`,
       leida: false,
       creadoPorEmail: userEmail,
       fecha: serverTimestamp(),
     });
+
     resetForm();
   } catch (error) {
     console.error("Error al actualizar:", error);
   }
 }
 
-function getFormData() {
-  const selectedStaff = Array.from(
-    document.querySelectorAll('input[name="staffSelected"]:checked'),
-  ).map((cb) => cb.value);
-  return {
-    invoiceType: document.getElementById("invoiceType").value,
-    date: document.getElementById("date").value,
-    type: document.getElementById("type").value,
-    client: document.getElementById("client").value,
-    cuit: document.getElementById("cuit").value,
-    place: document.getElementById("place").value,
-    guests: document.getElementById("guests").value,
-    total: document.getElementById("total").value,
-    deposit: document.getElementById("deposit").value,
-    status: document.getElementById("status").value,
-    paid: document.getElementById("paid").value === "true",
-    invoiceNumber: document.getElementById("invoiceNumber").value,
-    notes: document.getElementById("notes").value,
-    staffAsignado: selectedStaff,
-  };
-}
-
 function loadEvents() {
   const q = query(collection(db, "events"), orderBy("date"));
+
   onSnapshot(q, (snap) => {
     window.allEventsData = [];
-    snap.forEach((d) => window.allEventsData.push({ ...d.data(), id: d.id }));
+
+    snap.forEach((d) => {
+      window.allEventsData.push({ ...d.data(), id: d.id });
+    });
+
     renderFilteredEvents(window.allEventsData);
   });
 }
 
-export async function fillFormForEdit(e, id) {
+// ===============================
+// EDITAR EVENTO
+// ===============================
+export async function fillFormForEdit(evento, id) {
   editingId = id;
-  const fields = ["date", "type", "client", "cuit", "place", "guests", "total", "deposit", "status", "invoiceNumber", "notes", "invoiceType"];
-  fields.forEach((f) => {
-    const el = document.getElementById(f);
-    if (el) el.value = e[f] || (f === "invoiceType" ? "B/C" : "");
+
+  const fields = [
+    "date",
+    "type",
+    "client",
+    "cuit",
+    "place",
+    "horaInicio",
+    "horaFin",
+    "guests",
+    "total",
+    "deposit",
+    "status",
+    "invoiceNumber",
+    "notes",
+    "invoiceType",
+  ];
+
+  fields.forEach((field) => {
+    const el = document.getElementById(field);
+    if (el) {
+      el.value = evento[field] || (field === "invoiceType" ? "B/C" : "");
+    }
   });
+
   const paidEl = document.getElementById("paid");
-  if (paidEl) paidEl.value = e.paid ? "true" : "false";
+  if (paidEl) {
+    paidEl.value = evento.paid ? "true" : "false";
+  }
 
   await renderStaffSelection();
-  if (e.staffAsignado) {
-    e.staffAsignado.forEach((idMozo) => {
+
+  if (evento.staffAsignado) {
+    evento.staffAsignado.forEach((idMozo) => {
       const checkbox = document.querySelector(`input[value="${idMozo}"]`);
       if (checkbox) checkbox.checked = true;
     });
   }
-  document.getElementById("formTitle").innerText = "Editando Evento";
-  document.getElementById("updateBtn").style.display = "inline-block";
-  document.getElementById("addBtn").style.display = "none";
+
+  const formTitle = document.getElementById("formTitle");
+  const updateBtn = document.getElementById("updateBtn");
+  const addBtn = document.getElementById("addBtn");
   const form = document.getElementById("eventFormContainer");
+
+  if (formTitle) formTitle.innerText = "Editando Evento";
+  if (updateBtn) updateBtn.style.display = "inline-block";
+  if (addBtn) addBtn.style.display = "none";
+
   if (form) {
     form.style.display = "block";
     form.scrollIntoView({ behavior: "smooth" });
   }
 }
 
+// ===============================
+// BÚSQUEDA
+// ===============================
 function initSearch() {
   const searchInput = document.getElementById("searchInput");
   if (!searchInput) return;
+
   searchInput.addEventListener("input", (e) => {
     const term = e.target.value.toLowerCase();
+
     document.querySelectorAll(".card").forEach((card) => {
-      card.style.display = card.innerText.toLowerCase().includes(term) ? "" : "none";
+      card.style.display = card.innerText.toLowerCase().includes(term)
+        ? ""
+        : "none";
     });
   });
 }
 
+// ===============================
+// STATS Y DATALIST
+// ===============================
 function updateClientDatalist(events) {
   const datalist = document.getElementById("clientList");
   if (!datalist) return;
+
   const clients = [...new Set(events.map((e) => e.client))].sort();
-  datalist.innerHTML = clients.map((name) => `<option value="${name}">`).join("");
+
+  datalist.innerHTML = clients
+    .map((name) => `<option value="${name}">`)
+    .join("");
 }
 
 function updateStats(events) {
   const totalMes = events.reduce((sum, e) => sum + Number(e.total || 0), 0);
   const senasMes = events.reduce((sum, e) => sum + Number(e.deposit || 0), 0);
+
   const totalEl = document.getElementById("totalMes");
   const senasEl = document.getElementById("senasMes");
   const saldoEl = document.getElementById("saldoMes");
   const countEl = document.getElementById("eventosMes");
+
   if (totalEl) totalEl.innerText = `$${totalMes.toLocaleString()}`;
   if (senasEl) senasEl.innerText = `$${senasMes.toLocaleString()}`;
   if (saldoEl) saldoEl.innerText = `$${(totalMes - senasMes).toLocaleString()}`;
   if (countEl) countEl.innerText = events.length;
 }
 
+// ===============================
+// RENDER EVENTOS
+// ===============================
 export function renderFilteredEvents(events) {
   const eventsList = document.getElementById("eventsList");
   if (!eventsList) return;
+
   eventsList.innerHTML = "";
+
   const today = new Date().toISOString().split("T")[0];
   const upcomingGroups = {};
   const pastGroups = {};
+
   events.forEach((e) => {
     const monthKey = getMonthLabel(e.date);
     const isPast = e.date < today;
+
     if (isPast) {
       if (!pastGroups[monthKey]) pastGroups[monthKey] = [];
       pastGroups[monthKey].push(createCard(e, e.id));
@@ -244,177 +321,107 @@ export function renderFilteredEvents(events) {
       upcomingGroups[monthKey].push(createCard(e, e.id));
     }
   });
+
   updateStats(events);
   updateClientDatalist(events);
+
   renderGroup(upcomingGroups, "📅 Próximos Eventos", "#27ae60");
   renderGroup(pastGroups, "📜 Historial", "#7f8c8d");
 }
 
 function renderGroup(groups, sectionTitle, color) {
   const eventsList = document.getElementById("eventsList");
+  if (!eventsList) return;
+
   if (Object.keys(groups).length === 0) return;
+
   eventsList.innerHTML += `<h3 style="color:${color}; margin-top:30px;">${sectionTitle}</h3>`;
+
   for (const month in groups) {
     eventsList.innerHTML += `<h4 style="margin: 15px 0 5px 0; color: #d4af37;">${month}</h4>`;
     eventsList.innerHTML += groups[month].join("");
   }
 }
 
-function createCard(e, id) {
-  const colors = { Presupuestado: "#f1c40f", "Seña pagada": "#e67e22", Confirmado: "#27ae60", Realizado: "#2980b9", Cancelado: "#c0392b" };
-  const statusStyle = `background:${colors[e.status] || "#666"}; color:white; padding:4px 10px; border-radius:12px; font-size:0.75em; font-weight:bold; display:inline-block; min-width:80px; text-align:center;`;
-  const invoiceIndicator = e.invoiceType === "A" ? `<span style="background:#34495e; color:white; padding:2px 6px; border-radius:4px; font-size:0.7em; margin-left:5px;">FACT A</span>` : "";
+function createCard(evento, id) {
+  const colors = {
+    Presupuestado: "#f1c40f",
+    "Seña pagada": "#e67e22",
+    Confirmado: "#27ae60",
+    Realizado: "#2980b9",
+    Cancelado: "#c0392b",
+  };
+
+  const statusStyle = `
+    background:${colors[evento.status] || "#666"};
+    color:white;
+    padding:4px 10px;
+    border-radius:12px;
+    font-size:0.75em;
+    font-weight:bold;
+    display:inline-block;
+    min-width:80px;
+    text-align:center;
+  `;
+
+  const invoiceIndicator =
+    evento.invoiceType === "A"
+      ? `<span style="background:#34495e; color:white; padding:2px 6px; border-radius:4px; font-size:0.7em; margin-left:5px;">FACT A</span>`
+      : "";
 
   return `
     <div class="card" data-id="${id}" style="cursor:pointer; border:1px solid #ddd; padding:12px; border-radius:8px; margin-bottom:10px; background:white;">
       <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-        <div style="flex-grow: 1;">
-          <small style="color:#555; font-weight:bold;">${formatDate(e.date)}</small>${invoiceIndicator}<br>
-          <strong style="font-size: 1.2em; color: #111;">${e.client}</strong><br>
-          <small style="color:#d4af37; font-weight:bold;">${e.type}</small>
+        <div style="flex-grow:1;">
+          <small style="color:#555; font-weight:bold;">${formatDate(evento.date)}</small>${invoiceIndicator}<br>
+          <strong style="font-size:1.2em; color:#111;">${evento.client}</strong><br>
+          <small style="color:#d4af37; font-weight:bold;">${evento.type}</small>
         </div>
-        <span style="${statusStyle}">${e.status}</span>
+        <span style="${statusStyle}">${evento.status}</span>
       </div>
-      <div style="margin-top:10px; font-size:0.9em; color:#333; border-top: 1px solid #eee; padding-top: 5px;">
-        📍 ${e.place} | 👥 ${e.guests} pers. | 💰 $${Number(e.total || 0).toLocaleString()}
+
+      <div style="margin-top:10px; font-size:0.9em; color:#333; border-top:1px solid #eee; padding-top:5px;">
+        📍 ${evento.place} | 👥 ${evento.guests} pers. | 💰 $${Number(evento.total || 0).toLocaleString()}
       </div>
     </div>
   `;
 }
 
-function getMonthLabel(dateStr) {
-  const d = new Date(dateStr + "T00:00:00");
-  const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-  return `${months[d.getMonth()]} ${d.getFullYear()}`;
-}
+// ===============================
+// INIT
+// ===============================
+export function initEvents() {
+  document.getElementById("cancelFormBtn")?.addEventListener("click", resetForm);
+  document.getElementById("addBtn")?.addEventListener("click", saveEvent);
+  document.getElementById("updateBtn")?.addEventListener("click", updateExistingEvent);
 
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("es-AR");
-}
+  document.getElementById("showFormBtn")?.addEventListener("click", () => {
+    resetForm();
 
-export function prepararBandejaDeSalida(evento) {
-  const place = evento.place || "Sin lugar";
-  const date = evento.date || "Sin fecha";
-  const guests = evento.guests || "0";
-  const total = evento.total || "0";
-  const notes = evento.notes || "Sin notas";
+    const form = document.getElementById("eventFormContainer");
+    if (form) form.style.display = "block";
+  });
 
-  const container = document.getElementById("staffCheckboxes");
-  const checkboxes = container ? Array.from(container.querySelectorAll('input[name="staffSelected"]:checked')) : [];
-
-  if (checkboxes.length === 0) {
-    alert("No seleccionaste ningún mozo.");
-    return;
-  }
-
-  const mensaje = `Hola, te asignamos al evento:
-📍 Lugar: ${place}
-📅 Fecha: ${date}
-👥 Invitados: ${guests}
-💰 Total: $${total}
-Notas: ${notes}`;
-
-  const yaEnviadosEnDB = evento.mensajesEnviados || [];
-
-  window.bandejaSalida = checkboxes.map((cb) => ({
-    nombre: cb.parentElement.innerText.trim(),
-    telefono: cb.dataset.tel?.replace(/\D/g, ""),
-    mensaje: mensaje,
-    enviado: yaEnviadosEnDB.some(m => (typeof m === 'object' ? m.nombre : m) === cb.parentElement.innerText.trim()),
-  }));
-
-  renderizarModal();
-}
-
-function renderizarModal() {
-  const listaEnvio = document.getElementById("listaEnvioContenido");
-  const modal = document.getElementById("modalEnvio");
-
-  if (listaEnvio && modal) {
-    listaEnvio.innerHTML = `
-      <div style="margin-bottom: 15px; padding: 10px; background: #f0f0f0; border-radius: 8px;">
-        <label><strong>Horario para todos:</strong></label>
-        <div style="display: flex; gap: 10px; margin-top: 5px;">
-          <input type="time" id="globalStart" value="08:00" style="width: 50%;">
-          <input type="time" id="globalEnd" value="16:00" style="width: 50%;">
-        </div>
-      </div>
-      <div id="listaStaffParaEnviar">
-        ${window.bandejaSalida.map((item, index) => `
-          <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-            <span>${item.nombre} ${item.enviado ? "✅" : ""}</span>
-            ${!item.enviado ? `<button onclick="window.ejecutarEnvio(${index})" style="background:#25d366; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Enviar</button>` : '<span style="color:#25d366; font-size:0.9em; font-weight:bold;">Enviado</span>'}
-          </div>
-        `).join("")}
-      </div>
-    `;
-    modal.style.display = "flex";
-  }
-}
-
-window.ejecutarEnvio = async function (index) {
-  const item = window.bandejaSalida[index];
-  const horaInicio = document.getElementById("globalStart").value;
-  const horaFin = document.getElementById("globalEnd").value;
-  const evento = window.allEventsData.find((e) => e.id === editingId);
-
-  if (item && item.telefono && evento) {
-    const mensaje = `Hola ${item.nombre}, te convocamos al evento: ${evento.place}.
-Fecha: ${evento.date}
-Horario: ${horaInicio} a ${horaFin}
-
-Responde con el número de la opción:
-1. CONFIRMO asistencia
-2. NO puedo asistir`;
-
-    const url = `https://wa.me/${item.telefono}?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, "_blank");
-
-    try {
-      await updateDoc(doc(db, "events", editingId), {
-        mensajesEnviados: arrayUnion({
-          nombre: item.nombre,
-          estado: "pendiente",
-          fechaEnvio: new Date().toISOString(),
-        }),
-      });
-      window.bandejaSalida[index].enviado = true;
-      renderizarModal();
-    } catch (error) {
-      console.error("Error al actualizar:", error);
+  document.getElementById("btnGestionarStaff")?.addEventListener("click", () => {
+    if (editingId) {
+      window.abrirModalGestionStaff(editingId);
+    } else {
+      alert("Para gestionar el staff, primero guarda el evento o selecciónalo desde la lista.");
     }
-  }
-};
+  });
 
-window.rotarEstado = async function(eventId, mozoNombre) {
-    const evento = window.allEventsData.find(e => e.id === eventId);
-    if (!evento || !evento.mensajesEnviados) return;
+  document.getElementById("eventsList")?.addEventListener("click", (e) => {
+    const card = e.target.closest(".card");
+    if (!card) return;
 
-    const mozoIndex = evento.mensajesEnviados.findIndex(m => 
-        (typeof m === 'object' ? m.nombre : m) === mozoNombre
-    );
+    const id = card.dataset.id;
+    const eventData = window.allEventsData.find((ev) => ev.id === id);
 
-    if (mozoIndex === -1) return;
-
-    let mozo = evento.mensajesEnviados[mozoIndex];
-    if (typeof mozo === 'string') {
-        mozo = { nombre: mozo, estado: 'pendiente' };
+    if (eventData) {
+      fillFormForEdit(eventData, id);
     }
+  });
 
-    const estados = ['pendiente', 'confirmado', 'rechazado'];
-    const currentIndex = estados.indexOf(mozo.estado || 'pendiente');
-    mozo.estado = estados[(currentIndex + 1) % estados.length];
-
-    const nuevoArray = [...evento.mensajesEnviados];
-    nuevoArray[mozoIndex] = mozo;
-
-    try {
-        await updateDoc(doc(db, "events", eventId), {
-            mensajesEnviados: nuevoArray
-        });
-    } catch (e) {
-        console.error("Error al actualizar estado:", e);
-    }
-};
+  loadEvents();
+  initSearch();
+}
