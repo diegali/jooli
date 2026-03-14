@@ -2,7 +2,7 @@ import { initEvents } from "./events.js";
 import { initCalendar } from "./calendar.js";
 import { initStaff } from "./staff.js";
 import { auth, db } from "./auth.js";
-
+import { initLista } from "./lista.js";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -29,6 +29,7 @@ window.showSection = function (sectionId) {
   const addEventContainer = document.getElementById("addEventContainer");
   const formContainer = document.getElementById("eventFormContainer");
   const summaryEl = document.getElementById("daySummary");
+  const filtrosEventos = document.getElementById("filtrosEventos");
 
   if (formContainer) formContainer.style.display = "none";
   if (summaryEl) summaryEl.style.display = "none";
@@ -43,6 +44,10 @@ window.showSection = function (sectionId) {
 
   if (searchSection) {
     searchSection.style.display = sectionId === "eventsList" ? "block" : "none";
+  }
+
+  if (filtrosEventos) {
+    filtrosEventos.style.display = sectionId === "eventsList" ? "block" : "none";
   }
 
   if (addEventContainer) {
@@ -153,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const cantidadActual = filtradas.length;
 
       if (inicializado && cantidadActual > cantidadAnterior) {
-        notifSound.play().catch(() => {});
+        notifSound.play().catch(() => { });
       }
 
       if (countEl) {
@@ -261,6 +266,7 @@ document.addEventListener("DOMContentLoaded", () => {
       initEvents();
       initCalendar();
       initStaff();
+      initLista();
 
       iniciarEscuchadorNotificaciones();
       window.showSection("calendar");

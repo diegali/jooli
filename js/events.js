@@ -6,6 +6,7 @@ import {
   query,
   orderBy,
   addDoc,
+  getDoc,
   updateDoc,
   doc,
   serverTimestamp,
@@ -13,6 +14,9 @@ import {
 
 let editingId = null;
 window.allEventsData = [];
+
+let eventoPendienteConfirmacion = null;
+let modalConfirmacionAbierto = false;
 
 // ===============================
 // HELPERS
@@ -134,7 +138,9 @@ async function saveEvent() {
   const eventData = getFormData();
   const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
-
+  if (!["Realizado", "Cancelado"].includes(eventData.status)) {
+    eventData.realizacionConfirmada = false;
+  }
   eventData.ultimoCambioPor = userName;
   eventData.mensajesEnviados = [];
 
@@ -160,6 +166,9 @@ async function updateExistingEvent() {
   const eventData = getFormData();
   const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
+  if (!["Realizado", "Cancelado"].includes(eventData.status)) {
+    eventData.realizacionConfirmada = false;
+  }
 
   eventData.ultimoCambioPor = userName;
 
@@ -189,7 +198,7 @@ function loadEvents() {
     snap.forEach((d) => {
       window.allEventsData.push({ ...d.data(), id: d.id });
     });
-
+    verificarEventosPasados(window.allEventsData);
     renderFilteredEvents(window.allEventsData);
   });
 }
@@ -302,6 +311,111 @@ function updateStats(events) {
   if (countEl) countEl.innerText = events.length;
 }
 
+function abrirModalConfirmarRealizacion(evento) {
+  const modal = document.getElementById("modalConfirmarRealizacion");
+  const texto = document.getElementById("textoConfirmarRealizacion");
+
+  if (!modal || !texto) return;
+
+  eventoPendienteConfirmacion = evento;
+  modalConfirmacionAbierto = true;
+
+  texto.innerHTML = `
+    El evento de <strong>${evento.client || "sin cliente"}</strong><br>
+    del <strong>${formatDate(evento.date)}</strong> ya pasó.<br><br>
+    ¿Se realizó este evento?
+  `;
+
+  modal.style.display = "flex";
+}
+
+function cerrarModalConfirmarRealizacion() {
+  const modal = document.getElementById("modalConfirmarRealizacion");
+  if (!modal) return;
+
+  modal.style.display = "none";
+  eventoPendienteConfirmacion = null;
+  modalConfirmacionAbierto = false;
+}
+
+function mostrarAvisoSimple(titulo, mensaje, icono = "⚠️") {
+  const modal = document.getElementById("modalAvisoSimple");
+  const tituloEl = document.getElementById("modalAvisoTitulo");
+  const mensajeEl = document.getElementById("modalAvisoMensaje");
+  const iconoEl = document.getElementById("modalAvisoIcono");
+
+  if (!modal || !tituloEl || !mensajeEl || !iconoEl) return;
+
+  tituloEl.textContent = titulo;
+  mensajeEl.innerHTML = mensaje;
+  iconoEl.textContent = icono;
+
+  modal.style.display = "flex";
+}
+
+function cerrarAvisoSimple() {
+  const modal = document.getElementById("modalAvisoSimple");
+  if (!modal) return;
+
+  modal.style.display = "none";
+}
+
+function verificarEventosPasados(events) {
+  if (modalConfirmacionAbierto) return;
+
+  const today = new Date().toISOString().split("T")[0];
+
+  for (const evento of events) {
+    const yaPaso = evento.date && evento.date < today;
+    const yaConfirmado = evento.realizacionConfirmada === true;
+    const yaRealizado = evento.status === "Realizado";
+    const yaCancelado = evento.status === "Cancelado";
+
+    if (yaPaso && !yaConfirmado && !yaRealizado && !yaCancelado) {
+      abrirModalConfirmarRealizacion(evento);
+      break;
+    }
+  }
+}
+
+async function confirmarRealizacionEvento(statusFinal) {
+  if (!eventoPendienteConfirmacion) return;
+
+  try {
+    const ref = doc(db, "events", eventoPendienteConfirmacion.id);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      alert("El evento ya no existe.");
+      cerrarModalConfirmarRealizacion();
+      return;
+    }
+
+    const dataActual = snap.data();
+
+    if (dataActual.realizacionConfirmada === true) {
+      cerrarModalConfirmarRealizacion();
+
+      mostrarAvisoSimple(
+        "Evento ya confirmado",
+        `Otro usuario ya confirmó este evento como <strong>${dataActual.status}</strong>.`,
+        "ℹ️"
+      );
+
+      return;
+    }
+
+    await updateDoc(ref, {
+      status: statusFinal,
+      realizacionConfirmada: true,
+    });
+
+    cerrarModalConfirmarRealizacion();
+  } catch (error) {
+    console.error("Error al confirmar realización del evento:", error);
+  }
+}
+
 // ===============================
 // RENDER EVENTOS
 // ===============================
@@ -312,6 +426,22 @@ export function renderFilteredEvents(events) {
   eventsList.innerHTML = "";
 
   const today = new Date().toISOString().split("T")[0];
+  const mostrarCerrados =
+    document.getElementById("mostrarCerrados")?.checked ?? false;
+  const mostrarCancelados =
+    document.getElementById("mostrarCancelados")?.checked ?? false;
+
+  events = events.filter((e) => {
+    const esPasado = e.date < today;
+    const esCerrado = esPasado && e.paid === true;
+    const esCancelado = e.status === "Cancelado";
+
+    if (!mostrarCerrados && esCerrado) return false;
+    if (!mostrarCancelados && esCancelado) return false;
+
+    return true;
+  });
+
   const upcomingGroups = {};
   const pastGroups = {};
 
@@ -350,6 +480,12 @@ function renderGroup(groups, sectionTitle, color) {
 }
 
 function createCard(evento, id) {
+  const today = new Date().toISOString().split("T")[0];
+  const esHoy = evento.date === today;
+  const bordeEvento = esHoy
+    ? "4px solid #e74c3c"
+    : "4px solid transparent";
+
   const colors = {
     Presupuestado: "#f1c40f",
     "Seña pagada": "#e67e22",
@@ -415,14 +551,28 @@ function createCard(evento, id) {
     }
   }
 
-
   return `
-    <div class="card" data-id="${id}" style="cursor:pointer; border:1px solid #ddd; padding:12px; border-radius:8px; margin-bottom:10px; background:white;">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-        <div style="flex-grow:1;">
-          <small style="color:#555; font-weight:bold;">${formatDate(evento.date)}</small>${invoiceIndicator}<br>
-          <strong style="font-size:1.2em; color:#111;">${evento.client}</strong><br>
-          <small style="color:#d4af37; font-weight:bold;">${evento.type}</small>
+    <div class="card" data-id="${id}" style="cursor:pointer; border:1px solid #ddd; border-left:${bordeEvento}; padding:12px; border-radius:8px; margin-bottom:10px; background:white;">    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+    <div style="flex-grow:1;">
+    <small style="color:#555; font-weight:bold;">${formatDate(evento.date)}</small>${invoiceIndicator}<br>
+    <strong style="font-size:1.2em; color:#111;">${evento.client}</strong><br>
+
+            ${evento.paid ? `
+              <span style="
+                display:inline-block;
+                margin:4px 0 2px 0;
+                padding:3px 8px;
+                background:#27ae60;
+                color:white;
+                border-radius:6px;
+                font-size:0.72em;
+                font-weight:bold;
+              ">
+                💰 COBRADO
+              </span><br>
+            ` : ""}
+
+            <small style="color:#d4af37; font-weight:bold;">${evento.type}</small>
         </div>
         <span style="${statusStyle}">${evento.status}</span>
       </div>
@@ -476,6 +626,11 @@ export function initEvents() {
       fillFormForEdit(eventData, id);
     }
   });
+  const btnCerrarAvisoSimple = document.getElementById("btnCerrarAvisoSimple");
+
+  if (btnCerrarAvisoSimple) {
+    btnCerrarAvisoSimple.addEventListener("click", cerrarAvisoSimple);
+  }
 
   const guestsInput = document.getElementById("guests");
   const staffInput = document.getElementById("staffNecesario");
@@ -501,6 +656,44 @@ export function initEvents() {
       }
     });
   }
+  document.getElementById("btnGestionarChecklist")?.addEventListener("click", () => {
+    if (editingId) {
+      window.abrirModalChecklist(editingId);
+    } else {
+      alert("Para gestionar la checklist, primero guarda el evento o selecciónalo desde la lista.");
+    }
+  });
+
+  const btnEventoRealizado = document.getElementById("btnEventoRealizado");
+  const btnEventoCancelado = document.getElementById("btnEventoCancelado");
+  const btnCerrarConfirmacionEvento = document.getElementById("btnCerrarConfirmacionEvento");
+
+  if (btnEventoRealizado) {
+    btnEventoRealizado.addEventListener("click", async () => {
+      await confirmarRealizacionEvento("Realizado");
+    });
+  }
+
+  if (btnEventoCancelado) {
+    btnEventoCancelado.addEventListener("click", async () => {
+      await confirmarRealizacionEvento("Cancelado");
+    });
+  }
+
+  if (btnCerrarConfirmacionEvento) {
+    btnCerrarConfirmacionEvento.addEventListener("click", () => {
+      cerrarModalConfirmarRealizacion();
+    });
+  }
+
+  document.addEventListener("change", (e) => {
+    if (
+      e.target.id === "mostrarCerrados" ||
+      e.target.id === "mostrarCancelados"
+    ) {
+      renderFilteredEvents(window.allEventsData || []);
+    }
+  });
 
   loadEvents();
   initSearch();

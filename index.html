@@ -97,6 +97,7 @@
     </div>
   </header>
 
+
   <div class="container" id="loginDiv">
     <div style="text-align: center; margin-bottom: 20px">
       <h3 style="color: var(--gold)">Bienvenido a JOOLI</h3>
@@ -157,6 +158,65 @@
           " />
       <datalist id="clientList"></datalist>
     </div>
+
+    <div id="filtrosEventos" style="
+  margin:10px 0 16px 0;
+  padding:12px 14px;
+  background:white;
+  border:1px solid #d9d9d9;
+  border-radius:10px;
+  display:none;
+">
+      <div style="
+    font-size:13px;
+    font-weight:bold;
+    color:#666;
+    margin-bottom:10px;
+  ">
+        Filtros
+      </div>
+
+      <label style="
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:15px;
+    color:#333;
+    cursor:pointer;
+    margin-bottom:10px;
+  ">
+        <input type="checkbox" id="mostrarCerrados" style="
+        width:18px;
+        height:18px;
+        margin:0;
+        accent-color:#c9a227;
+        flex-shrink:0;
+        cursor:pointer;
+      ">
+        <span>Mostrar eventos cerrados</span>
+      </label>
+
+      <label style="
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:15px;
+    color:#333;
+    cursor:pointer;
+  ">
+        <input type="checkbox" id="mostrarCancelados" style="
+        width:18px;
+        height:18px;
+        margin:0;
+        accent-color:#c0392b;
+        flex-shrink:0;
+        cursor:pointer;
+      ">
+        <span>Mostrar eventos cancelados</span>
+      </label>
+    </div>
+
+
 
     <div id="statsContainer" style="
           display: none;
@@ -302,21 +362,35 @@
         <label>Notas</label><textarea id="notes"></textarea>
       </div>
 
-      <div class="form-group">
-        <button type="button" id="btnGestionarStaff" style="
-              width: 100%;
-              padding: 12px;
-              background: #9b59b6;
-              color: white;
-              border: none;
-              border-radius: 8px;
-              cursor: pointer;
-              margin-bottom: 10px;
-            ">
-          👤 Gestionar Staff
-        </button>
-      </div>
+      <div class="form-group" style="margin-top:15px;">
+        <div style="display:flex; gap:10px;">
 
+          <button type="button" id="btnGestionarStaff" style="
+      flex:1;
+      padding:12px;
+      background:#9b59b6;
+      color:white;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+    ">
+            👤 Staff
+          </button>
+
+          <button type="button" id="btnGestionarChecklist" style="
+      flex:1;
+      padding:12px;
+      background:#16a085;
+      color:white;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+    ">
+            📦 Checklist
+          </button>
+
+        </div>
+      </div>
       <div style="margin-top: 10px">
         <button id="addBtn">Guardar Evento</button>
         <button id="updateBtn" style="display: none">
@@ -325,6 +399,7 @@
         <button id="cancelFormBtn" style="background: #666">Cancelar</button>
       </div>
     </div>
+
 
     <div id="eventsList" style="display: none"></div>
   </div>
@@ -499,6 +574,190 @@
       <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 15px" />
 
       <div id="listaGestionStaffContenido"></div>
+    </div>
+  </div>
+
+  <div id="modalChecklist" style="
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 2600;
+      justify-content: center;
+      align-items: center;
+">
+    <div style="
+        background: white;
+        padding: 24px 20px 20px 20px;
+        border-radius: 12px;
+        width: 95%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        position: relative;
+      ">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <div style="margin-bottom:15px;">
+          <h3 id="tituloModalChecklist" style="margin:0;">
+            📦 Checklist del evento
+          </h3>
+
+          <div id="resumenChecklistEvento" style="font-size:0.9em; color:#666; margin-top:4px;">
+          </div>
+        </div>
+
+        <button onclick="window.cerrarModalChecklist()" style="
+          position:absolute;
+          top:10px;
+          right:12px;
+          background:none;
+          border:none;
+          font-size:22px;
+          cursor:pointer;
+          color:#666;
+          ">
+          ✕
+        </button>
+      </div>
+
+      <div id="checklistEventoActual" style="margin-top:20px;"></div>
+
+      <div id="contenidoChecklistEvento">
+        <p style="color:#666; text-align:center;">Próximamente vas a poder gestionar la checklist acá.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalConfirmarRealizacion" style="
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.6);
+  z-index:3000;
+  justify-content:center;
+  align-items:center;
+">
+    <div style="
+    background:white;
+    width:92%;
+    max-width:420px;
+    border-radius:14px;
+    padding:22px 18px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.25);
+    text-align:center;
+  ">
+      <div style="font-size:28px; margin-bottom:8px;">📅</div>
+
+      <h3 style="margin:0 0 10px 0; color:#222;">
+        Confirmar evento
+      </h3>
+
+      <div id="textoConfirmarRealizacion" style="
+      font-size:15px;
+      color:#444;
+      line-height:1.45;
+      margin-bottom:18px;
+    ">
+      </div>
+
+      <div style="display:flex; gap:10px; flex-direction:column;">
+        <button id="btnEventoRealizado" style="
+        padding:12px;
+        border:none;
+        border-radius:10px;
+        background:#27ae60;
+        color:white;
+        font-weight:600;
+        cursor:pointer;
+      ">
+          Sí, se realizó
+        </button>
+
+        <button id="btnEventoCancelado" style="
+        padding:12px;
+        border:none;
+        border-radius:10px;
+        background:#c0392b;
+        color:white;
+        font-weight:600;
+        cursor:pointer;
+      ">
+          No, se canceló
+        </button>
+
+        <button id="btnCerrarConfirmacionEvento" style="
+        padding:10px;
+        border:none;
+        border-radius:10px;
+        background:#e0e0e0;
+        color:#333;
+        font-weight:600;
+        cursor:pointer;
+      ">
+          Más tarde
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="modalAvisoSimple" style="
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.55);
+  z-index:3100;
+  justify-content:center;
+  align-items:center;
+">
+    <div style="
+    background:white;
+    width:90%;
+    max-width:380px;
+    border-radius:14px;
+    padding:22px 18px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.25);
+    text-align:center;
+  ">
+      <div id="modalAvisoIcono" style="font-size:30px; margin-bottom:8px;">⚠️</div>
+
+      <h3 id="modalAvisoTitulo" style="
+      margin:0 0 10px 0;
+      color:#222;
+      font-size:20px;
+    ">
+        Aviso
+      </h3>
+
+      <div id="modalAvisoMensaje" style="
+      font-size:15px;
+      color:#444;
+      line-height:1.45;
+      margin-bottom:18px;
+    ">
+        Mensaje
+      </div>
+
+      <button id="btnCerrarAvisoSimple" style="
+      padding:12px 16px;
+      border:none;
+      border-radius:10px;
+      background:#d4af37;
+      color:#111;
+      font-weight:600;
+      cursor:pointer;
+      min-width:120px;
+    ">
+        Entendido
+      </button>
     </div>
   </div>
 </body>
