@@ -1,4 +1,4 @@
-import { db, auth } from "./auth.js";
+import { db, auth, storage } from "./auth.js";
 import { renderStaffSelection } from "./staff.js";
 import {
   collection,
@@ -11,6 +11,12 @@ import {
   doc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 let editingId = null;
 window.allEventsData = [];
@@ -91,6 +97,7 @@ export function resetForm() {
       if (el.type === "checkbox") {
         el.checked = false;
       }
+      actualizarUIBudget(null);
     });
   }
 
@@ -127,6 +134,7 @@ function getFormData() {
     paid: document.getElementById("paid")?.value === "true",
     invoiceNumber: document.getElementById("invoiceNumber")?.value || "",
     notes: document.getElementById("notes")?.value || "",
+    presupuestoURL: document.getElementById("presupuestoURL")?.value.trim() || "",
     staffAsignado: selectedStaff,
   };
 }
@@ -166,6 +174,10 @@ async function updateExistingEvent() {
   const eventData = getFormData();
   const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
+  if (!puedeEditarPresupuesto()) {
+    delete eventData.presupuestoURL;
+  }
+
   if (!["Realizado", "Cancelado"].includes(eventData.status)) {
     eventData.realizacionConfirmada = false;
   }
@@ -261,6 +273,156 @@ export async function fillFormForEdit(evento, id) {
   if (form) {
     form.style.display = "block";
     form.scrollIntoView({ behavior: "smooth" });
+  }
+  const abrirDriveBtn = document.getElementById("abrirDriveBtn");
+  const presupuestoInput = document.getElementById("presupuestoURL");
+  const verBtn = document.getElementById("btnVerPresupuesto");
+  const eliminarBtn = document.getElementById("btnEliminarPresupuesto");
+
+  const puedeEditar = puedeEditarPresupuesto();
+
+  if (abrirDriveBtn) {
+    abrirDriveBtn.style.display = puedeEditar ? "inline-block" : "none";
+  }
+
+  if (presupuestoInput) {
+
+    if (puedeEditar) {
+      presupuestoInput.value = evento.presupuestoURL || "";
+      presupuestoInput.disabled = false;
+      presupuestoInput.placeholder = "Pegá acá el link de Google Drive";
+
+    } else {
+      presupuestoInput.value = "";
+      presupuestoInput.disabled = true;
+      presupuestoInput.placeholder = evento.presupuestoURL
+        ? "Presupuesto cargado"
+        : "No hay presupuesto cargado";
+    }
+
+  }
+
+
+  if (evento.presupuestoURL) {
+    if (verBtn) {
+      verBtn.style.display = "inline-block";
+      verBtn.onclick = () => {
+        window.open(evento.presupuestoURL, "_blank");
+      };
+    }
+  } else {
+    if (verBtn) verBtn.style.display = "none";
+  }
+
+  if (eliminarBtn) {
+    eliminarBtn.style.display =
+      puedeEditar && evento.presupuestoURL ? "inline-block" : "none";
+  }
+
+
+}
+
+// ===============================
+// PRESUPUESTO
+// ===============================
+
+function puedeEditarPresupuesto() {
+  const userEmail = auth.currentUser?.email || "";
+  return userEmail === "almos2712@hotmail.com";
+}
+
+
+function actualizarUIBudget(evento) {
+  const btnVer = document.getElementById("btnVerPresupuesto");
+  const btnEliminar = document.getElementById("btnEliminarPresupuesto");
+  const info = document.getElementById("presupuestoInfo");
+
+  if (!btnVer || !btnEliminar || !info) return;
+
+  if (evento?.presupuestoURL) {
+    btnVer.style.display = "inline-block";
+    btnEliminar.style.display = "inline-block";
+    info.innerHTML = `Archivo actual: <strong>${evento.presupuestoNombre || "Presupuesto"}</strong>`;
+  } else {
+    btnVer.style.display = "none";
+    btnEliminar.style.display = "none";
+    info.innerHTML = "No hay presupuesto adjunto.";
+  }
+}
+
+async function subirPresupuestoEvento(file) {
+  if (!editingId) {
+    alert("Primero guarda el evento para poder adjuntar el presupuesto.");
+    return;
+  }
+
+  if (!file) return;
+
+  const tiposPermitidos = [
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ];
+
+  if (!tiposPermitidos.includes(file.type)) {
+    alert("Solo se permiten archivos PDF o imágenes.");
+    return;
+  }
+
+  const eventoActual = window.allEventsData.find((ev) => ev.id === editingId);
+  if (!eventoActual) {
+    alert("No se encontró el evento.");
+    return;
+  }
+
+  try {
+    if (eventoActual.presupuestoPath) {
+      try {
+        await deleteObject(ref(storage, eventoActual.presupuestoPath));
+      } catch (e) {
+        console.warn("No se pudo borrar el presupuesto anterior:", e);
+      }
+    }
+
+    const extension = file.name.split(".").pop();
+    const path = `presupuestos/${editingId}/presupuesto.${extension}`;
+    const storageRef = ref(storage, path);
+
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+
+    await updateDoc(doc(db, "events", editingId), {
+      presupuestoURL: url,
+      presupuestoNombre: file.name,
+      presupuestoPath: path,
+    });
+  } catch (error) {
+    console.error("Error al subir presupuesto:", error);
+    alert("Hubo un problema al subir el presupuesto.");
+  }
+}
+
+async function eliminarPresupuestoEvento() {
+  if (!editingId) return;
+
+  const eventoActual = window.allEventsData.find((ev) => ev.id === editingId);
+  if (!eventoActual?.presupuestoPath) return;
+
+  const confirmar = confirm("¿Seguro que quieres eliminar el presupuesto adjunto?");
+  if (!confirmar) return;
+
+  try {
+    await deleteObject(ref(storage, eventoActual.presupuestoPath));
+
+    await updateDoc(doc(db, "events", editingId), {
+      presupuestoURL: "",
+      presupuestoNombre: "",
+      presupuestoPath: "",
+    });
+  } catch (error) {
+    console.error("Error al eliminar presupuesto:", error);
+    alert("No se pudo eliminar el presupuesto.");
   }
 }
 
@@ -585,8 +747,28 @@ function createCard(evento, id) {
         👔 Presentación: ${evento.horaPresentacion || "-"}
         <br>
         <span style="color:${colorStaff}; font-weight:bold;">
-        ${textoStaff}
-        </span> · ✔ ${confirmados} · ⏳ ${pendientes} · ❌ ${rechazados}
+${textoStaff}
+</span> · ✔ ${confirmados} · ⏳ ${pendientes} · ❌ ${rechazados}
+
+${evento.presupuestoURL ? `
+  <br>
+  <button
+    onclick="window.open('${evento.presupuestoURL}', '_blank'); event.stopPropagation();"
+    style="
+      margin-top:8px;
+      padding:8px 12px;
+      background:#2980b9;
+      color:white;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:0.9em;
+    "
+  >
+    📄 Presupuesto
+  </button>
+` : ""}
+
       </div>
     </div>
   `;
@@ -624,8 +806,19 @@ export function initEvents() {
 
     if (eventData) {
       fillFormForEdit(eventData, id);
+      actualizarUIBudget(eventData);
     }
   });
+
+  const abrirDriveBtn = document.getElementById("abrirDriveBtn");
+
+  if (abrirDriveBtn) {
+    abrirDriveBtn.addEventListener("click", () => {
+      window.open("https://drive.google.com", "_blank");
+    });
+  }
+
+
   const btnCerrarAvisoSimple = document.getElementById("btnCerrarAvisoSimple");
 
   if (btnCerrarAvisoSimple) {
@@ -694,6 +887,44 @@ export function initEvents() {
       renderFilteredEvents(window.allEventsData || []);
     }
   });
+
+  const presupuestoFile = document.getElementById("presupuestoFile");
+  const btnSubirPresupuesto = document.getElementById("btnSubirPresupuesto");
+  const btnVerPresupuesto = document.getElementById("btnVerPresupuesto");
+  const btnEliminarPresupuesto = document.getElementById("btnEliminarPresupuesto");
+
+  if (btnSubirPresupuesto && presupuestoFile) {
+    btnSubirPresupuesto.addEventListener("click", () => {
+      if (!editingId) {
+        alert("Primero guarda el evento para poder adjuntar el presupuesto.");
+        return;
+      }
+      presupuestoFile.click();
+    });
+
+    presupuestoFile.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      await subirPresupuestoEvento(file);
+      presupuestoFile.value = "";
+    });
+  }
+
+  if (btnVerPresupuesto) {
+    btnVerPresupuesto.addEventListener("click", () => {
+      const eventoActual = window.allEventsData.find((ev) => ev.id === editingId);
+      if (eventoActual?.presupuestoURL) {
+        window.open(eventoActual.presupuestoURL, "_blank");
+      }
+    });
+  }
+
+  if (btnEliminarPresupuesto) {
+    btnEliminarPresupuesto.addEventListener("click", async () => {
+      await eliminarPresupuestoEvento();
+    });
+  }
 
   loadEvents();
   initSearch();

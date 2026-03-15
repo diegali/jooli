@@ -361,6 +361,57 @@
       <div class="form-group">
         <label>Notas</label><textarea id="notes"></textarea>
       </div>
+      <div class="form-group" style="margin-top:15px;">
+        <label>Presupuesto</label>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:8px;">
+          <button type="button" id="abrirDriveBtn" style="
+      padding:10px 14px;
+      background:#2c3e50;
+      color:white;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+    ">
+            📂 Abrir Drive
+          </button>
+        </div>
+
+        <input type="text" id="presupuestoURL" placeholder="Pegá acá el link de Google Drive" style="
+      width:100%;
+      padding:10px;
+      border:1px solid #ccc;
+      border-radius:8px;
+      box-sizing:border-box;
+    ">
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px;">
+          <button type="button" id="btnVerPresupuesto" style="
+      display:none;
+      padding:10px 14px;
+      background:#2980b9;
+      color:white;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+    ">
+            👁 Ver presupuesto
+          </button>
+
+          <button type="button" id="btnEliminarPresupuesto" style="
+      display:none;
+      padding:10px 14px;
+      background:#c0392b;
+      color:white;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+    ">
+            🗑 Quitar link
+          </button>
+        </div>
+      </div>
+
 
       <div class="form-group" style="margin-top:15px;">
         <div style="display:flex; gap:10px;">
