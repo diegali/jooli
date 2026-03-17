@@ -38,13 +38,14 @@ header {
 
 .header-title {
   flex: 2;
-  /* El título ocupa el centro */
   text-align: center;
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--gold);
   text-transform: uppercase;
   margin: 0;
+  margin-left: 12px;
+  letter-spacing: 0.5px;
 }
 
 button {
@@ -128,13 +129,15 @@ textarea {
 
 .card {
   background: white;
+  color: #111;
   padding: 15px;
   margin-bottom: 12px;
   border-radius: 12px;
+  border: 1px solid #ddd;
+  border-left: 8px solid #ccc;
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.08);
   cursor: pointer;
-  transition: 0.3s;
-  color: #111;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 /* Estilo para el logo */
@@ -144,32 +147,6 @@ textarea {
   width: auto;
   vertical-align: middle;
   /* Alinea el logo con el texto */
-}
-
-/* Estilo para el nuevo título resaltado */
-.header-title {
-  font-size: 1.2rem;
-  /* Tamaño más grande */
-  font-weight: 600;
-  /* Muy grueso (resaltado) */
-  color: #d4af37;
-  /* Color dorado (o el que prefieras) */
-  margin-left: 12px;
-  /* Espacio entre el logo y el texto */
-  letter-spacing: 0.5px;
-  /* Un toque de elegancia */
-  text-align: center;
-  text-transform: uppercase;
-  /* Opcional: todo en mayúsculas */
-}
-
-/* Ajuste para que todo el header esté bien alineado */
-header {
-  display: flex;
-  align-items: center;
-  /* Asegura que todo quede centrado verticalmente */
-  padding: 10px;
-  border-bottom: 2px solid #f0f0f0;
 }
 
 body.dark .card {
@@ -205,7 +182,7 @@ body.dark .card.selected {
 
 @media (max-width: 600px) {
   .fc-event-title {
-    font-size: 0.7em !important;
+    font-size: 0.75rem !important;
     font-weight: bold;
     white-space: nowrap;
     overflow: hidden;
@@ -215,6 +192,19 @@ body.dark .card.selected {
   .fc-daygrid-event {
     margin-top: 1px !important;
     padding: 1px !important;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1rem !important;
+  }
+
+  .fc .fc-button {
+    font-size: 0.8rem !important;
+    padding: 4px 8px !important;
+  }
+
+  .fc-daygrid-day-frame {
+    min-height: 60px !important;
   }
 }
 
@@ -266,12 +256,6 @@ body.dark .card.selected {
   color: #fff;
 }
 
-/* Mejora en la tarjeta */
-.card {
-  border-left: 8px solid #ccc;
-  /* Borde lateral por defecto */
-}
-
 /* Borde lateral de color según estado */
 .card[data-status="Presupuestado"] {
   border-left-color: #f1c40f;
@@ -313,57 +297,14 @@ body.dark .card.selected {
   gap: 10px;
 }
 
-#calendar {
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border: 1px solid #ddd;
-}
-
-/* Hacer que el calendario se vea bien en modo oscuro */
 body.dark .fc {
   color: #111;
   /* FullCalendar se lee mejor con fondo claro, mantenemos el interior blanco */
 }
 
-/* Resaltado de tarjeta seleccionada */
-.card {
-  border: 1px solid #ddd;
-  padding: 15px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-}
-
 .card:hover {
   transform: scale(1.02);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* Ajustes para móviles */
-@media (max-width: 600px) {
-
-  /* Reducir tamaño de títulos del calendario */
-  .fc .fc-toolbar-title {
-    font-size: 1rem !important;
-  }
-
-  /* Reducir tamaño de los botones de navegación */
-  .fc .fc-button {
-    font-size: 0.8rem !important;
-    padding: 4px 8px !important;
-  }
-
-  /* Hacer que los eventos se vean más compactos */
-  .fc-event-title {
-    font-size: 0.75rem !important;
-  }
-
-  /* Reducir altura de celdas para que quepan más días en pantalla */
-  .fc-daygrid-day-frame {
-    min-height: 60px !important;
-  }
 }
 
 #toggleStatsBtn {
@@ -567,13 +508,6 @@ body.dark .fc {
 .staff-actions {
   display: flex;
   gap: 10px;
-}
-
-.staff-summary {
-  font-size: 13px;
-  color: #777;
-  margin-top: 4px;
-  font-weight: 500;
 }
 
 .btn-icon {

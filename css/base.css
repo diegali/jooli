@@ -1,0 +1,126 @@
+/* =========================
+   BASE — Variables y estilos globales
+========================= */
+
+:root {
+  /* Marca */
+  --gold: #d4af37;
+  --gold-dark: #c29d2e;
+  --gold-light: #f9f2dc;
+
+  /* Fondos */
+  --bg: #f4f1eb;
+  --bg-card: #ffffff;
+  --bg-dark: #111111;
+
+  /* Texto */
+  --text-primary: #111111;
+  --text-secondary: #444444;
+  --text-muted: #666666;
+  --text-hint: #888888;
+
+  /* Bordes */
+  --border: #dddddd;
+  --border-light: #eeeeee;
+  --border-input: #cccccc;
+
+  /* Estados de evento */
+  --status-presupuestado-bg: #f1c40f;
+  --status-presupuestado-text: #000000;
+  --status-sena-bg: #e67e22;
+  --status-sena-text: #ffffff;
+  --status-confirmado-bg: #27ae60;
+  --status-confirmado-text: #ffffff;
+  --status-realizado-bg: #2980b9;
+  --status-realizado-text: #ffffff;
+  --status-cancelado-bg: #c0392b;
+  --status-cancelado-text: #ffffff;
+
+  /* Semánticos */
+  --color-success: #27ae60;
+  --color-warning: #f39c12;
+  --color-danger: #c0392b;
+  --color-info: #2980b9;
+
+  /* Acciones */
+  --color-staff: #9b59b6;
+  --color-checklist: #16a085;
+  --color-presupuesto: #2980b9;
+  --color-dark-btn: #2c3e50;
+
+  /* Radios */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 20px;
+
+  /* Sombras */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.18);
+
+  /* Tipografía */
+  --font-base: 'Segoe UI', sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 15px;
+  --font-size-lg: 16px;
+}
+
+/* Reset mínimo */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-base);
+  background: var(--bg);
+  transition: background 0.3s;
+}
+
+body.dark {
+  background: #121212;
+  color: white;
+}
+
+/* Inputs globales */
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-input);
+  box-sizing: border-box;
+  font-family: var(--font-base);
+}
+
+textarea {
+  margin-top: 5px;
+  resize: vertical;
+}
+
+/* Botón base */
+button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  background: var(--bg-dark);
+  color: var(--gold);
+  font-weight: 600;
+  font-family: var(--font-base);
+}
+
+button:hover {
+  background: var(--gold);
+  color: var(--bg-dark);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

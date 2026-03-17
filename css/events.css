@@ -1,0 +1,543 @@
+/* =========================
+   EVENTOS — Cards, Formulario, Filtros, Stats, Calendario
+========================= */
+
+/* ---- Búsqueda ---- */
+.search-section {
+  margin: 20px 0;
+  display: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-lg);
+}
+
+/* ---- Filtros ---- */
+.filtros-eventos {
+  margin: 10px 0 16px 0;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid #d9d9d9;
+  border-radius: 10px;
+  display: none;
+}
+
+.filtros-label {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.filtros-checkboxes {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.filtro-check-label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid #e0dbd0;
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+}
+
+.filtro-check {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.filtro-check--cerrados  { accent-color: #c9a227; }
+
+.filtros-estado-wrap {
+  margin-top: 4px;
+  border-top: 1px solid var(--border-light);
+  padding-top: 0px;
+}
+
+.filtros-estado-label {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.filtros-estado-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  padding-right: 32px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+
+.filtro-estado {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: #555;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.filtro-estado.active {
+  background: var(--gold);
+  color: var(--text-primary);
+  border-color: var(--gold);
+}
+
+.filtro-estado:hover:not(.active) {
+  background: var(--gold-light);
+  color: var(--text-primary);
+}
+
+/* ---- Cards de evento ---- */
+.event-card {
+  background: var(--bg-card);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  border-left: 4px solid transparent;
+}
+
+.event-card--hoy {
+  border-left-color: var(--color-danger);
+}
+
+.event-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.event-card__fecha {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.event-card__cliente {
+  font-size: 1.05em;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.event-card__tipo {
+  font-size: 0.85em;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.event-card__body {
+  margin-top: 8px;
+  font-size: 0.85em;
+  color: #444;
+  line-height: 1.6;
+}
+
+.event-card__alquileres {
+  font-size: 0.75em;
+  color: var(--status-sena-bg);
+  margin-top: 4px;
+}
+
+/* Badge de estado (reutilizable) */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75em;
+  font-weight: bold;
+  display: inline-block;
+  min-width: 80px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.status-badge--Presupuestado  { background: var(--status-presupuestado-bg); color: var(--status-presupuestado-text); }
+.status-badge--Seña-pagada    { background: var(--status-sena-bg);          color: var(--status-sena-text); }
+.status-badge--Confirmado     { background: var(--status-confirmado-bg);    color: var(--status-confirmado-text); }
+.status-badge--Realizado      { background: var(--status-realizado-bg);     color: var(--status-realizado-text); }
+.status-badge--Cancelado      { background: var(--status-cancelado-bg);     color: var(--status-cancelado-text); }
+
+/* Badge de factura */
+.invoice-badge {
+  background: #34495e;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7em;
+  margin-left: 5px;
+}
+
+/* Encabezados de sección en lista */
+.eventos-seccion-titulo {
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.eventos-seccion-titulo--proximos {
+  background: #111;
+  color: #d4af37;
+}
+
+.eventos-seccion-titulo--historial {
+  background: #5f5e5a;
+  color: #e8e6e0;
+}
+
+.eventos-mes-titulo {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 10px 0 6px 2px;
+}
+
+/* Zona contenedora del historial */
+.eventos-historial-zona {
+  background: #f4f1eb;
+  border-radius: 12px;
+  padding: 12px 8px;
+  margin-top: 8px;
+}
+
+/* Bordes de card por estado (lista legacy) */
+.card { background: var(--bg-card); color: #111; padding: 15px; margin-bottom: 12px; border-radius: var(--radius-lg); border: 1px solid var(--border); border-left: 8px solid #ccc; box-shadow: var(--shadow-md); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+.card:hover { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+.card[data-status="Presupuestado"] { border-left-color: var(--status-presupuestado-bg); }
+.card[data-status="Seña pagada"]   { border-left-color: var(--status-sena-bg); }
+.card[data-status="Confirmado"]    { border-left-color: var(--status-confirmado-bg); }
+.card[data-status="Realizado"]     { border-left-color: var(--status-realizado-bg); }
+.card[data-status="Cancelado"]     { border-left-color: var(--status-cancelado-bg); }
+
+/* ---- Agregar evento ---- */
+.add-event-container {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.btn-add-event {
+  background: var(--gold);
+  color: var(--text-primary);
+  padding: 10px 25px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+/* ---- Calendario ---- */
+.calendar-container {
+  margin-bottom: 30px;
+  background: var(--bg-card);
+  padding: 10px;
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+}
+
+.fc-day-today {
+  border: 2px solid var(--gold) !important;
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 600px) {
+  .fc-event-title { font-size: 0.75rem !important; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fc-daygrid-event { margin-top: 1px !important; padding: 1px !important; }
+  .fc .fc-toolbar-title { font-size: 1rem !important; }
+  .fc .fc-button { font-size: 0.8rem !important; padding: 4px 8px !important; }
+  .fc-daygrid-day-frame { min-height: 60px !important; }
+}
+
+/* ---- Estadísticas ---- */
+.stats-container {
+  display: none;
+  margin-bottom: 20px;
+}
+
+.stats-inner {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid #e8e4d9;
+  padding: 16px;
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.stats-title {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: #222;
+}
+
+.month-filter {
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-hint);
+  width: auto;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.stat-card {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.stat-card--dark { background: var(--bg-dark); }
+
+.stat-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-hint);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.stat-card--dark .stat-label { color: var(--gold); }
+
+.stat-value {
+  font-size: 17px;
+  font-weight: 700;
+  color: #222;
+}
+
+.stat-value--gold   { color: var(--gold); }
+.stat-value--green  { color: var(--color-success); }
+.stat-value--orange { color: var(--status-sena-bg); }
+
+.stats-divider {
+  height: 1px;
+  background: #e8e4d9;
+  margin: 10px 0;
+}
+
+@media (max-width: 400px) {
+  #totalMes, #senasMes, #saldoMes,
+  #eventosMes, #cobradoMes, #porCobrarMes {
+    font-size: 13px !important;
+  }
+}
+
+/* ---- Formulario de evento ---- */
+.event-form-container {
+  display: none;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: var(--font-size-base);
+}
+
+.form-alquileres { margin-top: 10px; }
+
+.alquileres-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.alquiler-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: normal;
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+}
+
+.alquiler-label input[type="checkbox"] {
+  width: auto;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.alq-notas { margin-top: 8px; }
+
+.form-presupuesto { margin-top: 15px; }
+.presupuesto-file-input { display: none; }
+
+.presupuesto-info {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.presupuesto-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-presupuesto {
+  padding: 10px 14px;
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.btn-presupuesto--subir    { background: var(--color-dark-btn); }
+.btn-presupuesto--ver      { display: none; background: var(--color-info); }
+.btn-presupuesto--eliminar { display: none; background: var(--color-danger); }
+
+.form-staff-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.btn-form-staff {
+  flex: 1;
+  padding: 12px;
+  background: var(--color-staff);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.btn-form-checklist {
+  flex: 1;
+  padding: 12px;
+  background: var(--color-checklist);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.form-submit-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.form-submit-btn {
+  flex: 1;
+  height: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-submit-btn--delete { background: var(--color-danger); }
+.form-submit-btn--cancel { background: #666; }
+
+/* ---- Lugar + Maps ---- */
+.place-input-wrap {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.place-input-wrap input { flex: 1; }
+
+.btn-ubicar {
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.btn-ubicar:hover {
+  background: var(--bg);
+  color: inherit;
+}
+
+/* Clases utilitarias faltantes */
+.maps-search-container { margin-bottom: 12px; }
+.stats-grid--top { margin-bottom: 10px; }
+
+.badge-pagado {
+    background: var(--color-success);
+    color: white;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.7em;
+    font-weight: 700;
+    margin-left: 6px;
+}
+
+.event-card__badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.eventos-historial-zona .event-card {
+  background: #ede9e0;
+  border: none;
+}

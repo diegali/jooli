@@ -1,0 +1,186 @@
+/* =========================
+   LAYOUT — Header, Nav, Contenedor
+========================= */
+
+/* Contenedor principal */
+.container {
+  max-width: 1100px;
+  margin: auto;
+  padding: 20px;
+  min-height: 100vh;
+  overflow: auto;
+}
+
+/* ---- Header ---- */
+header {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  background: #000;
+  border-bottom: 2px solid var(--gold);
+  position: relative;
+}
+
+.logo-container,
+.header-right {
+  flex: 1;
+}
+
+.header-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  height: 70px;
+  width: auto;
+  vertical-align: middle;
+}
+
+.header-title {
+  flex: 2;
+  text-align: center;
+  margin-left: 12px;
+}
+
+.app-main {
+  font-size: 22px;
+  font-weight: bold;
+  color: #f4c542;
+  line-height: 1.1;
+}
+
+.app-sub {
+  font-size: var(--font-size-sm);
+  color: #cccccc;
+}
+
+/* ---- Notificaciones ---- */
+.notif-wrapper {
+  position: relative;
+  cursor: pointer;
+  margin-right: 15px;
+}
+
+.notif-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: red;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 10px;
+  display: none;
+}
+
+.notif-panel {
+  display: none;
+  position: fixed;
+  top: 80px;
+  right: 0;
+  width: 300px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 15px;
+  z-index: 99999;
+}
+
+.notif-title {
+  margin: 0 0 10px 0;
+  color: #333;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 5px;
+}
+
+.notif-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+#notifList li {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-light);
+  color: #333;
+  font-size: 0.9em;
+  background: var(--bg-card);
+}
+
+/* ---- Usuario / Logout ---- */
+.user-info-container {
+  text-align: center;
+}
+
+.user-name-display {
+  color: white;
+  font-size: 0.9em;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.btn-logout {
+  background: transparent;
+  color: #aaa;
+  border: 1px solid #444;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  padding: 6px 12px;
+}
+
+/* ---- Navegación principal ---- */
+.main-nav {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 20px;
+  justify-content: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.nav-btn {
+  padding: 10px 8px;
+  border: 1px solid var(--gold);
+  background: var(--bg-card);
+  color: #333;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 0.85em;
+}
+
+.nav-btn.active {
+  background: #b8962e;
+  color: #ffffff;
+  border-color: #947725;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn:hover:not(.active) {
+  background: var(--gold-light);
+}
+
+.notif-sin-novedades {
+  color: #888;
+  text-align: center;
+  padding: 10px;
+}
+
+.notif-item {
+  padding: 10px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.notif-item__hora {
+  color: var(--gold);
+}

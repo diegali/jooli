@@ -6,7 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>JOOLI Agenda</title>
 
-  <link rel="stylesheet" href="./css/style.css?v=3.0" />
+  <link rel="stylesheet" href="./css/base.css?v=4.0" />
+  <link rel="stylesheet" href="./css/layout.css?v=4.0" />
+  <link rel="stylesheet" href="./css/login.css?v=4.0" />
+  <link rel="stylesheet" href="./css/events.css?v=4.0" />
+  <link rel="stylesheet" href="./css/staff.css?v=4.0" />
+  <link rel="stylesheet" href="./css/modals.css?v=4.0" />
+  <link rel="stylesheet" href="./css/checklist.css?v=4.0" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDOEYBKUlPqplFonjOKYagQdGUP352xNcg&libraries=places&loading=async"></script>
@@ -81,17 +87,6 @@
     </div>
 
     <div id="filtrosEventos" class="filtros-eventos">
-      <div class="filtros-label">Filtros</div>
-      <div class="filtros-checkboxes">
-        <label class="filtro-check-label">
-          <input type="checkbox" id="mostrarCerrados" class="filtro-check filtro-check--cerrados">
-          <span>Cerrados</span>
-        </label>
-        <label class="filtro-check-label">
-          <input type="checkbox" id="mostrarCancelados" class="filtro-check filtro-check--cancelados">
-          <span>Cancelados</span>
-        </label>
-      </div>
       <div class="filtros-estado-wrap">
         <div class="filtros-estado-label">Estado</div>
         <div class="filtros-estado-scroll">
@@ -100,6 +95,8 @@
           <button type="button" class="filtro-estado" data-estado="Seña pagada">Seña pagada</button>
           <button type="button" class="filtro-estado" data-estado="Confirmado">Confirmado</button>
           <button type="button" class="filtro-estado" data-estado="Realizado">Realizado</button>
+          <button type="button" class="filtro-estado" data-estado="Cancelado">Cancelado</button>
+          <button type="button" class="filtro-estado" data-estado="Cerrado">Cerrado</button>
         </div>
       </div>
     </div>

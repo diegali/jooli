@@ -3,6 +3,7 @@ import { initCalendar } from "./calendar.js";
 import { initStaff } from "./staff.js";
 import { auth, db } from "./auth.js";
 import { initLista } from "./lista.js";
+import { USUARIOS_MAP } from "./events/events-utils.js";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -19,6 +20,8 @@ import {
   onSnapshot,
   orderBy,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+
 
 // ===============================
 // SECCIONES Y UI
@@ -71,14 +74,7 @@ function updateUserNameDisplay() {
   if (!userNameDisplay) return;
 
   const email = auth.currentUser?.email;
-
-  const usuariosMap = {
-    "almos2712@hotmail.com": "Laura",
-    "mariano@a.com": "Mariano",
-    "seba@a.com": "Sebastián",
-  };
-
-  userNameDisplay.innerText = usuariosMap[email] || "Usuario";
+  userNameDisplay.innerText = USUARIOS_MAP[email] || "Usuario";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -200,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (notifList) {
         notifList.innerHTML =
           paraMostrar.length === 0
-            ? "<li style='color:#888; text-align:center; padding:10px;'>Sin novedades</li>"
+            ? "<li class='notif-sin-novedades'>Sin novedades</li>"
             : "";
 
         paraMostrar.forEach((d) => {
@@ -208,12 +204,10 @@ document.addEventListener("DOMContentLoaded", () => {
           const li = document.createElement("li");
 
           li.innerHTML = `
-            <div style="padding:10px; border-bottom:1px solid #eee;">
-              <span>${data.mensaje}</span><br>
-              <small style="color:#d4af37;">
-                ${formatarHora(data.fecha)}
-              </small>
-            </div>
+          <div class="notif-item">
+            <span>${data.mensaje}</span><br>
+            <small class="notif-item__hora">${formatarHora(data.fecha)}</small>
+          </div>
           `;
 
           notifList.appendChild(li);

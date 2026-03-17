@@ -121,15 +121,9 @@ export async function guardarMozo() {
 window.borrarMozo = async function (id) {
   window.mostrarAvisoStaff(
     "¿Eliminar mozo?",
-    "¿Seguro que querés eliminarlo del staff?<br><br>" +
-    `<button onclick="window.confirmarBorrarMozo('${id}')" style="` +
-    "padding:10px 20px; background:#c0392b; color:white; border:none; " +
-    "border-radius:8px; cursor:pointer; font-weight:600; margin-right:8px;" +
-    `">Sí, eliminar</button>` +
-    `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'" style="` +
-    "padding:10px 20px; background:#95a5a6; color:white; border:none; " +
-    "border-radius:8px; cursor:pointer; font-weight:600;" +
-    `">Cancelar</button>`,
+    `¿Seguro que querés eliminarlo del staff?<br><br>
+    <button onclick="window.confirmarBorrarMozo('${id}')" class="btn-aviso-confirmar">Sí, eliminar</button>
+    <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
     "🗑",
     false
   );
@@ -155,41 +149,18 @@ function renderStaffList(snapshot) {
     const inicial = mozo.nombre ? mozo.nombre.charAt(0).toUpperCase() : "?";
 
     html += `
-      <div style="
-        display:flex;
-        align-items:center;
-        padding:10px 12px;
-        border-radius:10px;
-        margin-bottom:6px;
-        background:#f9f7f2;
-      ">
-        <div style="
-          width:36px; height:36px; border-radius:50%;
-          background:#111; color:#d4af37;
-          display:flex; align-items:center; justify-content:center;
-          font-weight:700; font-size:14px; flex-shrink:0;
-        ">${inicial}</div>
-
-        <div style="flex:1; margin-left:10px;">
-          <div style="font-size:14px; font-weight:600; color:#111;">${escapeHtml(mozo.nombre)}</div>
-          <div style="font-size:12px; color:#888; margin-top:1px;">${escapeHtml(mozo.telefono)}</div>
+      <div class="staff-list-item">
+        <div class="staff-avatar staff-avatar--pendiente">${inicial}</div>
+        <div class="staff-list-info">
+          <div class="staff-list-nombre">${escapeHtml(mozo.nombre)}</div>
+          <div class="staff-list-telefono">${escapeHtml(mozo.telefono)}</div>
         </div>
-
-        <button
-          onclick="borrarMozo('${docSnap.id}')"
-          style="
-            background:none; border:none; cursor:pointer;
-            color:#ccc; font-size:16px; padding:4px 6px;
-            border-radius:6px;
-          "
-          onmouseover="this.style.color='#e74c3c'; this.style.background='#fdecea';"
-          onmouseout="this.style.color='#ccc'; this.style.background='none';"
-        >🗑</button>
+        <button onclick="borrarMozo('${docSnap.id}')" class="btn-catalogo-eliminar">🗑</button>
       </div>
     `;
   });
 
-  listaDiv.innerHTML = html || "<p style='text-align:center; color:#888; font-size:14px;'>No hay staff cargado.</p>";
+  listaDiv.innerHTML = html || "<p class='staff-sin-datos'>No hay staff cargado.</p>";
 }
 
 export function cargarListaStaff() {
@@ -252,8 +223,7 @@ export async function renderStaffSelection() {
     container.innerHTML = "";
 
     if (staffData.length === 0) {
-      container.innerHTML =
-        "<small style='padding:10px;'>No hay staff cargado</small>";
+      container.innerHTML = "<small class='staff-sin-datos'>No hay staff cargado</small>";
       return;
     }
 
@@ -261,14 +231,14 @@ export async function renderStaffSelection() {
 
     staffData.forEach((data) => {
       html += `
-        <label style="display:block; margin-bottom:5px; cursor:pointer;">
+        <label class="staff-checkbox-label">
           <input
             type="checkbox"
             name="staffSelected"
             value="${data.id}"
             data-nombre="${escapeHtml(data.nombre)}"
             data-tel="${escapeHtml(data.telefono)}"
-            style="margin-right:8px;"
+            class="staff-checkbox-input"
           >
           ${escapeHtml(data.nombre)}
         </label>
@@ -368,16 +338,14 @@ window.abrirModalGestionStaff = async function (eventId) {
 
   const mensajes = ordenarStaff(evento.mensajesEnviados || []);
   const panelSeleccion = document.getElementById("contenedorSeleccionStaff");
-  const seleccionAbierta =
-    panelSeleccion && panelSeleccion.style.display !== "none";
+  const seleccionAbierta = panelSeleccion && panelSeleccion.style.display !== "none";
   const totalStaffNecesario = Number(evento.staffNecesario || 0);
 
   const totalStaffAsignado = mensajes.filter(
     (m) => obtenerEstadoStaff(m) !== "rechazado"
   ).length;
 
-  const staffCompleto =
-    totalStaffNecesario > 0 && totalStaffAsignado >= totalStaffNecesario;
+  const staffCompleto = totalStaffNecesario > 0 && totalStaffAsignado >= totalStaffNecesario;
 
   const botonAgregar = document.getElementById("btnAbrirSeleccion");
   if (botonAgregar) {
@@ -388,144 +356,87 @@ window.abrirModalGestionStaff = async function (eventId) {
     } else {
       botonAgregar.disabled = staffCompleto;
       botonAgregar.innerText = staffCompleto ? "Completo" : "+ Agregar";
-
-      if (staffCompleto) {
-        botonAgregar.classList.add("completo");
-      } else {
-        botonAgregar.classList.remove("completo");
-      }
+      botonAgregar.classList.toggle("completo", staffCompleto);
     }
   }
 
   const totalStaff = mensajes.length;
-  const confirmados = mensajes.filter(
-    (m) => obtenerEstadoStaff(m) === "confirmado"
-  ).length;
-  const pendientes = mensajes.filter(
-    (m) => obtenerEstadoStaff(m) === "pendiente"
-  ).length;
-  const rechazados = mensajes.filter(
-    (m) => obtenerEstadoStaff(m) === "rechazado"
-  ).length;
+  const confirmados = mensajes.filter((m) => obtenerEstadoStaff(m) === "confirmado").length;
+  const pendientes = mensajes.filter((m) => obtenerEstadoStaff(m) === "pendiente").length;
+  const rechazados = mensajes.filter((m) => obtenerEstadoStaff(m) === "rechazado").length;
 
   const staffNecesario = Number(evento.staffNecesario || 0);
   const activos = confirmados + pendientes;
   const faltan = Math.max(staffNecesario - activos, 0);
 
-  let colorEstado = "#27ae60";
-  if (activos === 0) {
-    colorEstado = "#c0392b";
-  } else if (faltan > 0) {
-    colorEstado = "#f39c12";
-  }
-
   if (resumen) {
     let linea1 = "Sin staff asignado";
-
     if (totalStaff > 0) {
-      linea1 =
-        `${confirmados} confirmados · ${pendientes} pendientes` +
+      linea1 = `${confirmados} confirmados · ${pendientes} pendientes` +
         (rechazados > 0 ? ` · ${rechazados} rechazados` : "");
     }
 
+    let colorClase = "ok";
+    if (activos === 0) colorClase = "danger";
+    else if (faltan > 0) colorClase = "warning";
+
     let linea2 = "";
     if (staffNecesario > 0) {
-      linea2 = `
-        <span style="color:${colorEstado}; font-weight:600;">
-          👥 ${staffNecesario} · ✔ ${activos} · ➕ ${faltan}
-        </span>
-      `;
+      linea2 = `<span class="staff-resumen-estado staff-resumen-estado--${colorClase}">
+        👥 ${staffNecesario} · ✔ ${activos} · ➕ ${faltan}
+      </span>`;
     }
 
     resumen.innerHTML = linea2 ? `${linea1}<br>${linea2}` : linea1;
   }
 
   if (mensajes.length === 0) {
-    container.innerHTML =
-      "<p style='text-align:center; color:#666;'>No hay staff asignado todavía.</p>";
+    container.innerHTML = "<p class='staff-sin-datos'>No hay staff asignado todavía.</p>";
   } else {
-    container.innerHTML = mensajes
-      .map((m) => {
-        const nombre = normalizarNombreStaff(m);
-        const estado = obtenerEstadoStaff(m);
-        const whatsappEnviado = obtenerWhatsappEnviado(m);
-        const inicial = nombre ? nombre.charAt(0).toUpperCase() : "?";
+    const estadoTexto = {
+      confirmado: "Confirmado",
+      rechazado: "Rechazado",
+      pendiente: "Pendiente",
+    };
 
-        const avatarColors = {
-          confirmado: "background:#27ae60; color:white;",
-          rechazado: "background:#e74c3c; color:white;",
-          pendiente: "background:#111; color:#d4af37;",
-        };
+    container.innerHTML = mensajes.map((m) => {
+      const nombre = normalizarNombreStaff(m);
+      const estado = obtenerEstadoStaff(m);
+      const whatsappEnviado = obtenerWhatsappEnviado(m);
+      const inicial = nombre ? nombre.charAt(0).toUpperCase() : "?";
 
-        const avatarStyle = avatarColors[estado] || avatarColors.pendiente;
+      return `
+        <div class="staff-gestion-item ${seleccionAbierta ? "staff-gestion-item--disabled" : ""}">
+          <button
+            onclick="window.rotarEstado('${eventId}','${nombre}')"
+            title="Cambiar estado"
+            class="staff-avatar staff-avatar--${estado}"
+          >${inicial}</button>
 
-        const estadoTexto = {
-          confirmado: "Confirmado",
-          rechazado: "Rechazado",
-          pendiente: "Pendiente",
-        };
-
-        const estadoColor = {
-          confirmado: "#27ae60",
-          rechazado: "#e74c3c",
-          pendiente: "#888",
-        };
-
-        return `
-          <div style="
-            display:flex; align-items:center;
-            padding:10px 12px; border-radius:10px;
-            margin-bottom:6px; background:#f9f7f2;
-            opacity:${seleccionAbierta ? "0.5" : "1"};
-            pointer-events:${seleccionAbierta ? "none" : "auto"};
-          ">
-            <button
-              onclick="window.rotarEstado('${eventId}','${nombre}')"
-              title="Cambiar estado"
-              style="
-                width:36px; height:36px; border-radius:50%;
-                ${avatarStyle}
-                border:none; cursor:pointer;
-                font-weight:700; font-size:14px; flex-shrink:0;
-                display:flex; align-items:center; justify-content:center;
-              "
-            >${inicial}</button>
-
-            <div style="flex:1; margin-left:10px;">
-              <div style="font-size:14px; font-weight:600; color:#111;">${escapeHtml(nombre)}</div>
-              <div style="font-size:11px; font-weight:600; color:${estadoColor[estado] || "#888"}; margin-top:1px;">
-                ${estadoTexto[estado] || "Pendiente"}
-              </div>
-            </div>
-
-            <button
-              onclick="window.enviarWhatsApp('${eventId}','${nombre}')"
-              title="Enviar WhatsApp"
-              style="
-                background:none; border:none; cursor:pointer;
-                padding:4px 6px; border-radius:6px; margin-right:4px;
-              "
-            >
-              ${whatsappEnviado
-            ? '<i class="fa-solid fa-check" style="color:#27ae60; font-size:16px;"></i>'
-            : '<i class="fa-brands fa-whatsapp" style="color:#25D366; font-size:20px;"></i>'
-          }
-            </button>
-
-            <button
-              onclick="window.quitarStaff('${eventId}','${nombre}')"
-              title="Quitar"
-              style="
-                background:none; border:none; cursor:pointer;
-                color:#ccc; font-size:16px; padding:4px 6px; border-radius:6px;
-              "
-              onmouseover="this.style.color='#e74c3c'; this.style.background='#fdecea';"
-              onmouseout="this.style.color='#ccc'; this.style.background='none';"
-            >🗑</button>
+          <div class="staff-list-info">
+            <div class="staff-list-nombre">${escapeHtml(nombre)}</div>
+            <div class="staff-estado staff-estado--${estado}">${estadoTexto[estado] || "Pendiente"}</div>
           </div>
-        `;
-      })
-      .join("");
+
+          <button
+            onclick="window.enviarWhatsApp('${eventId}','${nombre}')"
+            title="Enviar WhatsApp"
+            class="btn-icon wa"
+          >
+            ${whatsappEnviado
+              ? '<i class="fa-solid fa-check sent-icon"></i>'
+              : '<i class="fa-brands fa-whatsapp"></i>'
+            }
+          </button>
+
+          <button
+            onclick="window.quitarStaff('${eventId}','${nombre}')"
+            title="Quitar"
+            class="btn-catalogo-eliminar"
+          >🗑</button>
+        </div>
+      `;
+    }).join("");
   }
 
   modal.style.display = "flex";
@@ -537,8 +448,8 @@ window.cerrarModalGestionStaff = function () {
   const boton = document.getElementById("btnAbrirSeleccion");
   const listaStaff = document.getElementById("listaGestionStaffContenido");
   const btnCerrarModal = document.getElementById("btnCerrarModalStaff");
-  if (btnCerrarModal) btnCerrarModal.style.display = "inline-flex";
 
+  if (btnCerrarModal) btnCerrarModal.style.display = "inline-flex";
   if (panel) panel.style.display = "none";
   if (boton) boton.innerText = "+ Agregar";
   if (listaStaff) listaStaff.classList.remove("staff-disabled");
@@ -612,33 +523,16 @@ async function togglePanelSeleccionStaff() {
         hayDisponibles = true;
 
         html += `
-          <label style="
-            display:flex;
-            align-items:center;
-            gap:12px;
-            padding:10px 12px;
-            border-radius:10px;
-            margin-bottom:6px;
-            background:#f9f7f2;
-            cursor:pointer;
-          ">
-            <div style="
-              width:36px; height:36px; border-radius:50%;
-              background:#111; color:#d4af37;
-              display:flex; align-items:center; justify-content:center;
-              font-weight:700; font-size:14px; flex-shrink:0;
-            ">${escapeHtml(data.nombre.charAt(0).toUpperCase())}</div>
-
-            <span style="flex:1; font-size:14px; font-weight:600; color:#111;">
-              ${escapeHtml(data.nombre)}
-            </span>
-
+          <label class="staff-seleccion-label">
+            <div class="staff-avatar staff-avatar--pendiente">
+              ${escapeHtml(data.nombre.charAt(0).toUpperCase())}
+            </div>
+            <span class="staff-seleccion-nombre">${escapeHtml(data.nombre)}</span>
             <input
               type="checkbox"
-              class="check-staff-asignar"
+              class="check-staff-asignar staff-seleccion-check"
               data-nombre="${escapeHtml(data.nombre)}"
               data-tel="${escapeHtml(data.telefono)}"
-              style="width:18px; height:18px; cursor:pointer; flex-shrink:0; accent-color:#d4af37;"
             >
           </label>
         `;
@@ -647,7 +541,7 @@ async function togglePanelSeleccionStaff() {
 
     listado.innerHTML = hayDisponibles
       ? html
-      : "<p style='padding:10px;color:#888;'>Todos los mozos ya han sido asignados a este evento.</p>";
+      : "<p class='staff-sin-datos'>Todos los mozos ya han sido asignados a este evento.</p>";
 
     panel.style.display = "block";
     boton.innerText = "Cancelar";
@@ -708,8 +602,7 @@ async function confirmarAsignacionStaff() {
     const totalStaffAsignado = staffFinal.filter(
       (s) => obtenerEstadoStaff(s) !== "rechazado"
     ).length;
-    const staffCompleto =
-      totalStaffNecesario > 0 && totalStaffAsignado >= totalStaffNecesario;
+    const staffCompleto = totalStaffNecesario > 0 && totalStaffAsignado >= totalStaffNecesario;
 
     await updateDoc(eventoRef, { mensajesEnviados: staffFinal });
     evento.mensajesEnviados = staffFinal;
@@ -718,12 +611,7 @@ async function confirmarAsignacionStaff() {
     if (boton) {
       boton.innerText = staffCompleto ? "Completo" : "+ Agregar";
       boton.disabled = staffCompleto;
-
-      if (staffCompleto) {
-        boton.classList.add("completo");
-      } else {
-        boton.classList.remove("completo");
-      }
+      boton.classList.toggle("completo", staffCompleto);
     }
     if (listaStaff) listaStaff.classList.remove("staff-disabled");
     if (btnCerrarModal) btnCerrarModal.style.display = "inline-flex";
@@ -740,15 +628,9 @@ async function confirmarAsignacionStaff() {
 window.quitarStaff = async function (eventId, nombreMozo) {
   window.mostrarAvisoStaff(
     "¿Quitar del evento?",
-    `¿Seguro que querés quitar a <strong>${nombreMozo}</strong> de este evento?<br><br>` +
-    `<button onclick="window.confirmarQuitarStaff('${eventId}','${nombreMozo}')" style="` +
-    "padding:10px 20px; background:#c0392b; color:white; border:none; " +
-    "border-radius:8px; cursor:pointer; font-weight:600; margin-right:8px;" +
-    `">Sí, quitar</button>` +
-    `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'" style="` +
-    "padding:10px 20px; background:#95a5a6; color:white; border:none; " +
-    "border-radius:8px; cursor:pointer; font-weight:600;" +
-    `">Cancelar</button>`,
+    `¿Seguro que querés quitar a <strong>${nombreMozo}</strong> de este evento?<br><br>
+    <button onclick="window.confirmarQuitarStaff('${eventId}','${nombreMozo}')" class="btn-aviso-confirmar">Sí, quitar</button>
+    <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
     "⚠️",
     false
   );
@@ -790,11 +672,10 @@ window.enviarWhatsApp = async function (eventId, nombreMozo) {
     return;
   }
 
-  const fechaEvento = new Date(evento.date + "T00:00:00")
-    .toLocaleDateString("es-AR");
+  const fechaEvento = new Date(evento.date + "T00:00:00").toLocaleDateString("es-AR");
 
   const mensaje =
-    `Hola ${normalizarNombreStaff(mozo)}!
+`Hola ${normalizarNombreStaff(mozo)}!
 
 Te contactamos de JOOLI Catering para consultarte si podés trabajar en el siguiente evento:
 

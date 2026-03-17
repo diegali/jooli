@@ -1,5 +1,5 @@
 import { db } from "./auth.js";
-import { fillFormForEdit } from "./events.js";
+import { fillFormForEdit } from "./events/events-form.js";
 import {
   collection,
   onSnapshot,
