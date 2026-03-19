@@ -19,14 +19,18 @@ export function renderFilteredEvents(events, deps) {
         document.querySelector(".filtro-estado.active")?.dataset.estado || "";
 
     events = events.filter((e) => {
-        const esPasado = e.date < today;
+        // Para multidia usamos la fecha de la primera jornada
+        const fechaRef = e.esMultidia
+            ? (e.jornadas?.[0]?.fecha || "")
+            : (e.date || "");
+
+        const esPasado = fechaRef < today;
         const esCerrado = esPasado && e.paid === true;
 
         if (estadoActivo === "Cerrado") {
             return esCerrado;
         }
 
-        // Por defecto los cerrados no se muestran
         if (esCerrado) return false;
 
         if (estadoActivo && e.status !== estadoActivo) return false;
@@ -38,8 +42,12 @@ export function renderFilteredEvents(events, deps) {
     const pastGroups = {};
 
     events.forEach((e) => {
-        const monthKey = getMonthLabel(e.date);
-        const isPast = e.date < today;
+        const fechaRef = e.esMultidia
+            ? (e.jornadas?.[0]?.fecha || "")
+            : (e.date || "");
+
+        const monthKey = getMonthLabel(fechaRef);
+        const isPast = fechaRef < today;
 
         if (isPast) {
             if (!pastGroups[monthKey]) pastGroups[monthKey] = [];

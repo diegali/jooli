@@ -101,13 +101,26 @@ function rerenderEvents() {
 async function saveEvent() {
   const eventData = getFormData();
 
-  if (!eventData.date || !eventData.client) {
-    mostrarAvisoSimple(
-      "Faltan datos",
-      "Por favor completá al menos <strong>fecha</strong> y <strong>cliente</strong> antes de guardar.",
-      "⚠️"
-    );
+  if (!eventData.client) {
+    mostrarAvisoSimple("Faltan datos", "Por favor completá al menos <strong>cliente</strong> antes de guardar.", "⚠️");
     return;
+  }
+
+  if (!eventData.esMultidia && !eventData.date) {
+    mostrarAvisoSimple("Faltan datos", "Por favor completá al menos <strong>fecha</strong> y <strong>cliente</strong> antes de guardar.", "⚠️");
+    return;
+  }
+
+  if (eventData.esMultidia) {
+    if (!eventData.jornadas || eventData.jornadas.length === 0) {
+      mostrarAvisoSimple("Faltan jornadas", "Agregá al menos una jornada al evento.", "⚠️");
+      return;
+    }
+    const jornadaSinFecha = eventData.jornadas.findIndex(j => !j.fecha);
+    if (jornadaSinFecha !== -1) {
+      mostrarAvisoSimple("Fecha faltante", `La jornada ${jornadaSinFecha + 1} no tiene fecha asignada.`, "⚠️");
+      return;
+    }
   }
   const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
@@ -118,10 +131,22 @@ async function saveEvent() {
   eventData.mensajesEnviados = [];
 
   try {
+    // Limpiar valores undefined y objetos vacíos en jornadas
+    if (eventData.jornadas) {
+      eventData.jornadas = eventData.jornadas.map(j => ({
+        ...j,
+        alquileres: j.alquileres && Object.keys(j.alquileres).length > 0 ? j.alquileres : {
+          vajilla: false, manteleria: false, mobiliario: false, mobiliarioTrabajo: false, notas: ""
+        }
+      }));
+    }
+    if (eventData.esMultidia && eventData.jornadas?.length > 0) {
+      eventData.date = eventData.jornadas[0].fecha || "";
+    }
     await addDoc(collection(db, "events"), eventData);
 
     await addDoc(collection(db, "notificaciones"), {
-      mensaje: `${userName} creó el evento "${eventData.client}" del ${formatDateShort(eventData.date)}`,
+      mensaje: `${userName} creó el evento "${eventData.client}"${eventData.date ? ` del ${formatDateShort(eventData.date)}` : ""}`,
       leida: false,
       creadoPorEmail: userEmail,
       fecha: serverTimestamp(),
@@ -129,7 +154,8 @@ async function saveEvent() {
 
     resetEventForm();
   } catch (error) {
-    console.error("Error al guardar:", error);
+    console.error("Error al guardar:", error.code, error.message, error);
+    mostrarAvisoSimple("Error", `No se pudo guardar: ${error.message}`, "❌");
   }
 }
 
@@ -138,13 +164,26 @@ async function updateExistingEvent() {
 
   const eventData = getFormData();
 
-  if (!eventData.date || !eventData.client) {
-    mostrarAvisoSimple(
-      "Faltan datos",
-      "Por favor completá al menos <strong>fecha</strong>, <strong>cliente</strong> y <strong>total</strong> antes de guardar.",
-      "⚠️"
-    );
+  if (!eventData.client) {
+    mostrarAvisoSimple("Faltan datos", "Por favor completá al menos <strong>cliente</strong> antes de guardar.", "⚠️");
     return;
+  }
+
+  if (!eventData.esMultidia && !eventData.date) {
+    mostrarAvisoSimple("Faltan datos", "Por favor completá al menos <strong>fecha</strong> y <strong>cliente</strong> antes de guardar.", "⚠️");
+    return;
+  }
+
+  if (eventData.esMultidia) {
+    if (!eventData.jornadas || eventData.jornadas.length === 0) {
+      mostrarAvisoSimple("Faltan jornadas", "Agregá al menos una jornada al evento.", "⚠️");
+      return;
+    }
+    const jornadaSinFecha = eventData.jornadas.findIndex(j => !j.fecha);
+    if (jornadaSinFecha !== -1) {
+      mostrarAvisoSimple("Fecha faltante", `La jornada ${jornadaSinFecha + 1} no tiene fecha asignada.`, "⚠️");
+      return;
+    }
   }
   const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
@@ -159,10 +198,22 @@ async function updateExistingEvent() {
   eventData.ultimoCambioPor = userName;
 
   try {
+    // Limpiar valores undefined y objetos vacíos en jornadas
+    if (eventData.jornadas) {
+      eventData.jornadas = eventData.jornadas.map(j => ({
+        ...j,
+        alquileres: j.alquileres && Object.keys(j.alquileres).length > 0 ? j.alquileres : {
+          vajilla: false, manteleria: false, mobiliario: false, mobiliarioTrabajo: false, notas: ""
+        }
+      }));
+    }
+    if (eventData.esMultidia && eventData.jornadas?.length > 0) {
+      eventData.date = eventData.jornadas[0].fecha || "";
+    }
     await updateDoc(doc(db, "events", editingId), eventData);
 
     await addDoc(collection(db, "notificaciones"), {
-      mensaje: `${userName} modificó el evento "${eventData.client}" del ${formatDateShort(eventData.date)}`,
+      mensaje: `${userName} modificó el evento "${eventData.client}"${eventData.date ? ` del ${formatDateShort(eventData.date)}` : ""}`,
       leida: false,
       creadoPorEmail: userEmail,
       fecha: serverTimestamp(),
@@ -175,13 +226,20 @@ async function updateExistingEvent() {
 }
 
 function loadEvents() {
-  const q = query(collection(db, "events"), orderBy("date"));
+  const q = query(collection(db, "events"));
 
   onSnapshot(q, (snap) => {
     window.allEventsData = [];
 
     snap.forEach((d) => {
       window.allEventsData.push({ ...d.data(), id: d.id });
+    });
+
+    // Ordenar por fecha (usando primera jornada para multidia)
+    window.allEventsData.sort((a, b) => {
+      const fechaA = a.esMultidia ? (a.jornadas?.[0]?.fecha || "") : (a.date || "");
+      const fechaB = b.esMultidia ? (b.jornadas?.[0]?.fecha || "") : (b.date || "");
+      return fechaA.localeCompare(fechaB);
     });
 
     verificarEventosPasados(window.allEventsData);
@@ -856,29 +914,83 @@ export function initEvents() {
 
   window.toggleMultidia = function () {
     const checked = document.getElementById("esMultidia")?.checked;
-    const container = document.getElementById("jornadasContainer");
-    if (container) container.style.display = checked ? "block" : "none";
-    if (checked && (!window._jornadasActuales || window._jornadasActuales.length === 0)) {
+    const seccionUnDia = document.getElementById("seccionUnDia");
+    const jornadasCont = document.getElementById("jornadasContainer");
+
+    if (seccionUnDia) seccionUnDia.style.display = checked ? "none" : "block";
+    if (jornadasCont) jornadasCont.style.display = checked ? "block" : "none";
+
+    if (checked) {
+      // Limpiar jornadas anteriores y crear una nueva con la fecha del evento
+      window._jornadasActuales = [];
       window.agregarJornada();
+    } else {
+      // Al desactivar, limpiar jornadas
+      window._jornadasActuales = [];
+      document.getElementById("jornadasLista").innerHTML = "";
     }
   };
 
   window.agregarJornada = function () {
     if (!window._jornadasActuales) window._jornadasActuales = [];
-    window._jornadasActuales.push({
-      fecha: "",
+
+    const anterior = window._jornadasActuales.length > 0
+      ? window._jornadasActuales[window._jornadasActuales.length - 1]
+      : null;
+
+    const nueva = anterior ? {
+      fecha: anterior.fecha || "",
+      tipo: anterior.tipo || "Catering Completo",
+      lugar: anterior.lugar || "",
+      invitados: anterior.invitados || "",
+      staffNecesario: anterior.staffNecesario || "",
+      horaInicio: anterior.horaInicio || "",
+      horaFin: anterior.horaFin || "",
+      horaPresentacion: anterior.horaPresentacion || "",
+      alquileres: { ...anterior.alquileres } || {},
+      notas: anterior.notas || "",
+      mensajesEnviados: [],
+      checklist: [],
+    } : {
+      fecha: document.getElementById("date")?.value || "",
       tipo: "Catering Completo",
       lugar: "",
+      invitados: "",
+      staffNecesario: "",
       horaInicio: "",
       horaFin: "",
       horaPresentacion: "",
+      alquileres: {},
       notas: "",
-    });
+      mensajesEnviados: [],
+      checklist: [],
+    };
+
+    window._jornadasActuales.push(nueva);
     window.renderJornadas();
+  };
+
+  window.actualizarAlquilerJornada = function (index, campo, valor) {
+    if (!window._jornadasActuales?.[index]) return;
+    if (!window._jornadasActuales[index].alquileres) {
+      window._jornadasActuales[index].alquileres = {};
+    }
+    window._jornadasActuales[index].alquileres[campo] = valor;
   };
 
   window.eliminarJornada = function (index) {
     window._jornadasActuales.splice(index, 1);
+
+    if (window._jornadasActuales.length === 0) {
+      const esMultidia = document.getElementById("esMultidia");
+      const seccionUnDia = document.getElementById("seccionUnDia");
+      const jornadasCont = document.getElementById("jornadasContainer");
+
+      if (esMultidia) esMultidia.checked = false;
+      if (seccionUnDia) seccionUnDia.style.display = "block";
+      if (jornadasCont) jornadasCont.style.display = "none";
+    }
+
     window.renderJornadas();
   };
 
@@ -902,10 +1014,10 @@ export function initEvents() {
       // Verificar que no sea anterior a la jornada previa
       if (index > 0) {
         const fechaAnterior = window._jornadasActuales[index - 1].fecha;
-        if (fechaAnterior && valor <= fechaAnterior) {
+        if (fechaAnterior && valor < fechaAnterior) {
           mostrarAvisoSimple(
             "Fecha inválida",
-            `La fecha de la jornada ${index + 1} debe ser posterior a la jornada ${index}.`,
+            `La fecha de la jornada ${index + 1} no puede ser anterior a la jornada ${index}.`,
             "⚠️"
           );
           window.renderJornadas();
@@ -929,58 +1041,129 @@ export function initEvents() {
     lista.innerHTML = window._jornadasActuales.map((j, i) => `
     <div class="jornada-card">
       <div class="jornada-card-header">
-        <span class="jornada-numero">Jornada ${i + 1}</span>
+        <span class="jornada-numero">
+          Jornada ${i + 1}
+          ${j.fecha ? ` · ${new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR")}` : ""}
+          ${j.tipo ? ` · ${j.tipo}` : ""}
+          ${j.horaInicio ? ` · ${j.horaInicio}` : ""}
+        </span>
         <button type="button" onclick="window.eliminarJornada(${i})" class="btn-catalogo-eliminar">🗑</button>
       </div>
       <div class="jornada-grid">
-        <div class="form-group">
-          <label>Fecha</label>
-          <input type="date" value="${j.fecha}" onchange="window.actualizarJornada(${i}, 'fecha', this.value)">
-        </div>
-        <div class="form-group">
-          <label>Tipo</label>
-          <select onchange="window.actualizarJornada(${i}, 'tipo', this.value)">
-            ${["Catering Completo", "Coffee", "Almuerzo/Cena informal", "Almuerzo/Cena formal", "Asado", "Cumpleaños", "Cumpleaños de 15"]
+  <div class="form-group">
+    <label>Fecha</label>
+    <input type="date" value="${j.fecha}" onchange="window.actualizarJornada(${i}, 'fecha', this.value)">
+  </div>
+  <div class="form-group">
+    <label>Hora inicio</label>
+    <input type="time" value="${j.horaInicio || ""}" onchange="window.actualizarJornada(${i}, 'horaInicio', this.value)">
+  </div>
+  <div class="form-group">
+    <label>Hora fin</label>
+    <input type="time" value="${j.horaFin || ""}" onchange="window.actualizarJornada(${i}, 'horaFin', this.value)">
+  </div>
+  <div class="form-group">
+    <label>Presentación</label>
+    <input type="time" value="${j.horaPresentacion || ""}" onchange="window.actualizarJornada(${i}, 'horaPresentacion', this.value)">
+  </div>
+</div>
+
+<div class="jornada-row-tipo">
+  <div class="form-group jornada-tipo">
+    <label>Tipo</label>
+    <select onchange="window.actualizarJornada(${i}, 'tipo', this.value)">
+      ${["Catering Completo", "Coffee", "Almuerzo/Cena informal", "Almuerzo/Cena formal", "Asado", "Cumpleaños", "Cumpleaños de 15"]
         .map(t => `<option ${j.tipo === t ? "selected" : ""}>${t}</option>`).join("")}
-          </select>
+    </select>
+  </div>
+  <div class="form-group jornada-invitados">
+    <label>Invitados</label>
+    <input type="number" value="${j.invitados || ""}" onchange="window.actualizarJornada(${i}, 'invitados', this.value)">
+  </div>
+</div>
+
+<div class="jornada-row-lugar">
+  <div class="form-group jornada-mozos">
+    <label>Mozos</label>
+    <input type="number" value="${j.staffNecesario || ""}" onchange="window.actualizarJornada(${i}, 'staffNecesario', this.value)">
+  </div>
+  <div class="form-group jornada-lugar">
+    <label>Lugar</label>
+    <div class="place-input-wrap">
+      <input type="text" id="jornadaLugar_${i}" value="${j.lugar || ""}" 
+        onchange="window.actualizarJornada(${i}, 'lugar', this.value)">
+      <button type="button" onclick="window.abrirModalMapsJornada(${i})" class="btn-ubicar">📍</button>
+    </div>
+  </div>
+</div>
+
+      <div class="form-group form-alquileres">
+        <label>Alquileres</label>
+        <div class="alquileres-grid">
+          <label class="alquiler-label">
+            <input type="checkbox" ${j.alquileres?.vajilla ? "checked" : ""}
+              onchange="window.actualizarAlquilerJornada(${i}, 'vajilla', this.checked)"> Vajilla
+          </label>
+          <label class="alquiler-label">
+            <input type="checkbox" ${j.alquileres?.manteleria ? "checked" : ""}
+              onchange="window.actualizarAlquilerJornada(${i}, 'manteleria', this.checked)"> Mantelería
+          </label>
+          <label class="alquiler-label">
+            <input type="checkbox" ${j.alquileres?.mobiliario ? "checked" : ""}
+              onchange="window.actualizarAlquilerJornada(${i}, 'mobiliario', this.checked)"> Mobiliario
+          </label>
+          <label class="alquiler-label">
+            <input type="checkbox" ${j.alquileres?.mobiliarioTrabajo ? "checked" : ""}
+              onchange="window.actualizarAlquilerJornada(${i}, 'mobiliarioTrabajo', this.checked)"> Mob. trabajo
+          </label>
         </div>
-        <div class="form-group">
-          <label>Lugar</label>
-          <input type="text" value="${j.lugar}" onchange="window.actualizarJornada(${i}, 'lugar', this.value)">
-        </div>
-        <div class="form-group">
-          <label>Hora inicio</label>
-          <input type="time" value="${j.horaInicio}" onchange="window.actualizarJornada(${i}, 'horaInicio', this.value)">
-        </div>
-        <div class="form-group">
-          <label>Hora fin</label>
-          <input type="time" value="${j.horaFin}" onchange="window.actualizarJornada(${i}, 'horaFin', this.value)">
-        </div>
-        <div class="form-group">
-          <label>Presentación</label>
-          <input type="time" value="${j.horaPresentacion}" onchange="window.actualizarJornada(${i}, 'horaPresentacion', this.value)">
-        </div>
+        <input type="text" value="${j.alquileres?.notas || ""}" placeholder="Notas de alquiler..."
+          class="alq-notas" onchange="window.actualizarAlquilerJornada(${i}, 'notas', this.value)">
       </div>
+
       <div class="form-group">
         <label>Notas</label>
-        <textarea onchange="window.actualizarJornada(${i}, 'notas', this.value)">${j.notas}</textarea>
+        <textarea onchange="window.actualizarJornada(${i}, 'notas', this.value)">${j.notas || ""}</textarea>
       </div>
+
       <div class="jornada-acciones">
-        <button type="button"
-          onclick="window.abrirStaffJornada(${i})"
-          class="btn-jornada-staff">
+        <button type="button" onclick="window.abrirStaffJornada(${i})" class="btn-jornada-staff">
           👥 Staff
           ${j.mensajesEnviados?.length > 0 ? `<span class="jornada-staff-badge">${j.mensajesEnviados.length}</span>` : ""}
         </button>
-        <button type="button"
-          onclick="window.abrirChecklistJornada(${i})"
-          class="btn-jornada-checklist">
+        <button type="button" onclick="window.abrirChecklistJornada(${i})" class="btn-jornada-checklist">
           📦 Checklist
           ${j.checklist?.length > 0 ? `<span class="jornada-staff-badge">${j.checklist.filter(c => c.preparado).length}/${j.checklist.length}</span>` : ""}
         </button>
       </div>
     </div>
   `).join("");
+  };
+
+  window.abrirModalMapsJornada = function (jornadaIndex) {
+    window._jornadaMapsActual = jornadaIndex;
+    window.abrirModalMaps();
+
+    // Sobreescribir confirmarUbicacion para que guarde en la jornada
+    const confirmarOriginal = window.confirmarUbicacion;
+    window.confirmarUbicacion = function () {
+      const place = window._selectedPlace;
+      if (!place) {
+        mostrarAvisoSimple("Sin selección", "Buscá y seleccioná un lugar primero.", "⚠️");
+        return;
+      }
+
+      const input = document.getElementById(`jornadaLugar_${jornadaIndex}`);
+      if (input) input.value = place.nombre || place.direccion;
+
+      window.actualizarJornada(jornadaIndex, "lugar", place.nombre || place.direccion);
+      window.actualizarJornada(jornadaIndex, "placeUrl", place.url || "");
+
+      window.cerrarModalMaps();
+
+      // Restaurar confirmarUbicacion original
+      window.confirmarUbicacion = confirmarOriginal;
+    };
   };
 
   window.abrirStaffJornada = function (jornadaIndex) {

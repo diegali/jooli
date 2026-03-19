@@ -750,3 +750,74 @@
   color: #444;
   line-height: 1.7;
 }
+
+.adjunto-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.adjunto-select {
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.adjunto-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.adjunto-info {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-adjunto {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 16px;
+  background: #2c3e50;
+  color: white;
+}
+
+.btn-adjunto--ver      { background: #2980b9; }
+.btn-adjunto--eliminar { background: #c0392b; }
+
+.btn-adjunto:hover { opacity: 0.85; color: white; }
+
+.fecha-multidia-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.checkbox-label-multidia {
+  flex-shrink: 0;
+  padding-bottom: 10px;
+}
+
+.jornada-row-tipo,
+.jornada-row-lugar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.jornada-tipo      { flex: 3; }
+.jornada-invitados { flex: 1; }
+.jornada-mozos     { flex: 1; }
+.jornada-lugar     { flex: 3; }

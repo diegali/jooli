@@ -154,72 +154,28 @@
 
     <div id="eventFormContainer" class="event-form-container">
       <h3 id="formTitle">Nuevo Evento</h3>
+
+      <!-- Checkbox multidia PRIMERO -->
+      <div class="form-group form-group--full" style="margin-bottom:16px;">
+        <div class="fecha-multidia-row">
+          <div class="form-group" style="flex:1; margin:0;">
+            <label>Fecha</label>
+            <input type="date" id="date" />
+          </div>
+          <label class="checkbox-label-inline checkbox-label-multidia">
+            <input type="checkbox" id="esMultidia" onchange="window.toggleMultidia()">
+            <span>Varios días</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Datos generales -->
       <div class="form-grid">
-        <div class="form-group">
-          <label>Fecha</label><input type="date" id="date" />
-        </div>
-        <div class="form-group">
-          <label>Tipo</label>
-          <select id="type">
-            <option>Catering Completo</option>
-            <option>Coffee</option>
-            <option>Almuerzo/Cena informal</option>
-            <option>Almuerzo/Cena formal</option>
-            <option>Asado</option>
-            <option>Cumpleaños</option>
-            <option>Cumpleaños de 15</option>
-          </select>
-        </div>
         <div class="form-group">
           <label>Cliente</label><input type="text" id="client" />
         </div>
         <div class="form-group">
           <label>CUIT/DNI</label><input type="text" id="cuit" />
-        </div>
-        <div class="form-group form-group--full">
-          <label>Factura</label>
-          <div class="factura-row">
-            <select id="invoiceType">
-              <option value="B/C">B/C</option>
-              <option value="A">A</option>
-            </select>
-            <input type="text" id="invoiceNumber" placeholder="Nº factura" />
-          </div>
-          <div class="factura-acciones">
-            <button type="button" id="btnSubirFactura" class="btn-presupuesto btn-presupuesto--subir">📎 Subir</button>
-            <button type="button" id="btnVerFactura" class="btn-presupuesto btn-presupuesto--ver"
-              style="display:none;">👁 Ver</button>
-            <button type="button" id="btnEliminarFactura" class="btn-presupuesto btn-presupuesto--eliminar"
-              style="display:none;">🗑 Quitar</button>
-            <input type="file" id="facturaFile" accept=".pdf,image/*" class="presupuesto-file-input">
-          </div>
-          <div id="facturaInfo" class="presupuesto-info">No hay factura adjunta.</div>
-        </div>
-        <div class="form-group">
-          <label>Lugar</label>
-          <div class="place-input-wrap">
-            <input type="text" id="place" />
-            <button type="button" id="btnUbicar" class="btn-ubicar">📍</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Invitados</label><input type="number" id="guests" />
-        </div>
-        <div class="form-group">
-          <label>Hora de inicio</label><input type="time" id="horaInicio" />
-        </div>
-        <div class="form-group">
-          <label>Hora de fin</label><input type="time" id="horaFin" />
-        </div>
-
-        <div class="form-group">
-          <label>Mozos necesarios</label><input type="number" id="staffNecesario" />
-        </div>
-        <div class="form-group">
-          <label>Total $</label><input type="number" id="total" />
-        </div>
-        <div class="form-group">
-          <label>Seña $</label><input type="number" id="deposit" />
         </div>
         <div class="form-group">
           <label>Estado</label>
@@ -238,53 +194,117 @@
             <option value="true">Sí</option>
           </select>
         </div>
-      </div>
-      <div class="form-group form-group--full">
-        <label class="checkbox-label-inline">
-          <input type="checkbox" id="esMultidia" onchange="window.toggleMultidia()">
-          <span>¿Evento de varios días?</span>
-        </label>
+        <div class="form-group">
+          <label>Total $</label><input type="number" id="total" />
+        </div>
+        <div class="form-group">
+          <label>Seña $</label><input type="number" id="deposit" />
+        </div>
       </div>
 
+      <!-- Factura -->
+      <div class="form-group form-group--full">
+        <label>Factura</label>
+        <div class="adjunto-row">
+          <select id="invoiceType" class="adjunto-select">
+            <option value="B/C">B/C</option>
+            <option value="A">A</option>
+          </select>
+          <input type="text" id="invoiceNumber" placeholder="Nº factura" class="adjunto-input" />
+          <button type="button" id="btnSubirFactura" class="btn-adjunto">📎</button>
+          <button type="button" id="btnVerFactura" class="btn-adjunto btn-adjunto--ver"
+            style="display:none;">👁</button>
+          <button type="button" id="btnEliminarFactura" class="btn-adjunto btn-adjunto--eliminar"
+            style="display:none;">🗑</button>
+          <input type="file" id="facturaFile" accept=".pdf,image/*" class="presupuesto-file-input">
+        </div>
+        <div id="facturaInfo" class="presupuesto-info">No hay factura adjunta.</div>
+      </div>
+
+      <!-- Presupuesto -->
+      <div class="form-group form-group--full form-presupuesto">
+        <label>Presupuesto</label>
+        <div class="adjunto-row">
+          <div id="presupuestoInfo" class="presupuesto-info adjunto-info">No hay presupuesto adjunto.</div>
+          <button type="button" id="btnSubirPresupuesto" class="btn-adjunto">📎</button>
+          <button type="button" id="btnVerPresupuesto" class="btn-adjunto btn-adjunto--ver"
+            style="display:none;">👁</button>
+          <button type="button" id="btnEliminarPresupuesto" class="btn-adjunto btn-adjunto--eliminar"
+            style="display:none;">🗑</button>
+          <input type="file" id="presupuestoFile" accept=".pdf,image/*" class="presupuesto-file-input">
+        </div>
+      </div>
+
+      <!-- Sección de UN solo día (se oculta si es multidia) -->
+      <div id="seccionUnDia">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Hora de inicio</label><input type="time" id="horaInicio" />
+          </div>
+          <div class="form-group">
+            <label>Hora de fin</label><input type="time" id="horaFin" />
+          </div>
+        </div>
+
+        <div class="jornada-row-tipo">
+          <div class="form-group jornada-tipo">
+            <label>Tipo</label>
+            <select id="type">
+              <option>Catering Completo</option>
+              <option>Coffee</option>
+              <option>Almuerzo/Cena informal</option>
+              <option>Almuerzo/Cena formal</option>
+              <option>Asado</option>
+              <option>Cumpleaños</option>
+              <option>Cumpleaños de 15</option>
+            </select>
+          </div>
+          <div class="form-group jornada-invitados">
+            <label>Invitados</label><input type="number" id="guests" />
+          </div>
+        </div>
+
+        <div class="jornada-row-lugar">
+          <div class="form-group jornada-mozos">
+            <label>Mozos</label><input type="number" id="staffNecesario" />
+          </div>
+          <div class="form-group jornada-lugar">
+            <label>Lugar</label>
+            <div class="place-input-wrap">
+              <input type="text" id="place" />
+              <button type="button" id="btnUbicar" class="btn-ubicar">📍</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group form-alquileres">
+          <label>Alquileres necesarios</label>
+          <div class="alquileres-grid">
+            <label class="alquiler-label"><input type="checkbox" id="alqVajilla"> Vajilla</label>
+            <label class="alquiler-label"><input type="checkbox" id="alqManteleria"> Mantelería</label>
+            <label class="alquiler-label"><input type="checkbox" id="alqMobiliario"> Mobiliario</label>
+            <label class="alquiler-label"><input type="checkbox" id="alqMobiliarioTrabajo"> Mob. trabajo</label>
+          </div>
+          <input type="text" id="alqNotas" placeholder="Notas de alquiler (proveedor, precio...)" class="alq-notas">
+        </div>
+
+        <div class="form-group">
+          <label>Notas</label><textarea id="notes"></textarea>
+        </div>
+
+        <div class="form-group form-staff-buttons">
+          <button type="button" id="btnGestionarStaff" class="btn-form-staff">👤 Staff</button>
+          <button type="button" id="btnGestionarChecklist" class="btn-form-checklist">📦 Checklist</button>
+        </div>
+      </div>
+
+      <!-- Sección MULTIDIA (se muestra si es multidia) -->
       <div id="jornadasContainer" class="jornadas-container" style="display:none;">
         <div class="jornadas-header">
           <div class="jornadas-titulo">📅 Jornadas</div>
           <button type="button" onclick="window.agregarJornada()" class="btn-agregar-jornada">+ Agregar jornada</button>
         </div>
         <div id="jornadasLista"></div>
-      </div>
-      <div class="form-group">
-        <label>Notas</label><textarea id="notes"></textarea>
-      </div>
-
-      <div class="form-group form-alquileres">
-        <label>Alquileres necesarios</label>
-        <div class="alquileres-grid">
-          <label class="alquiler-label"><input type="checkbox" id="alqVajilla"> Vajilla</label>
-          <label class="alquiler-label"><input type="checkbox" id="alqManteleria"> Mantelería</label>
-          <label class="alquiler-label"><input type="checkbox" id="alqMobiliario"> Mobiliario</label>
-          <label class="alquiler-label"><input type="checkbox" id="alqMobiliarioTrabajo"> Mob. trabajo</label>
-        </div>
-        <input type="text" id="alqNotas" placeholder="Notas de alquiler (proveedor, precio...)" class="alq-notas">
-      </div>
-
-      <div class="form-group form-presupuesto">
-        <label>Presupuesto</label>
-        <input type="file" id="presupuestoFile" accept=".pdf,image/*" class="presupuesto-file-input">
-        <div id="presupuestoInfo" class="presupuesto-info">No hay presupuesto adjunto.</div>
-        <div class="presupuesto-actions">
-          <button type="button" id="btnSubirPresupuesto" class="btn-presupuesto btn-presupuesto--subir">📎 Subir
-          </button>
-          <button type="button" id="btnVerPresupuesto" class="btn-presupuesto btn-presupuesto--ver">👁 Ver
-          </button>
-          <button type="button" id="btnEliminarPresupuesto" class="btn-presupuesto btn-presupuesto--eliminar">🗑
-            Quitar</button>
-        </div>
-      </div>
-
-      <div class="form-group form-staff-buttons">
-        <button type="button" id="btnGestionarStaff" class="btn-form-staff">👤 Staff</button>
-        <button type="button" id="btnGestionarChecklist" class="btn-form-checklist">📦 Checklist</button>
       </div>
 
       <div class="form-submit-row">
