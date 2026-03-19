@@ -95,7 +95,9 @@ function createCard(evento, id) {
     const checklist = evento.checklist || [];
     const checklistCompleto = checklist.length > 0 && checklist.every(item => item.preparado);
     const checklistVacio = checklist.length === 0;
-
+    const multidiaBadge = evento.esMultidia && evento.jornadas?.length > 0
+        ? `<span class="badge-multidia">📅 ${evento.jornadas.length} jornadas</span>`
+        : "";
     const alquileresTexto = evento.alquileres && Object.values(evento.alquileres).some(v => v === true)
         ? `<div class="event-card__alquileres">🪑 ${[
             evento.alquileres.vajilla ? "Vajilla" : null,
@@ -114,10 +116,11 @@ function createCard(evento, id) {
           <div class="event-card__tipo">${evento.type || "-"}</div>
         </div>
         <div class="event-card__badges">
-        <div class="${statusClass}">${evento.status || "-"}</div>
-        ${pagadoBadge}
-        ${checklistCompleto ? `<span class="badge-checklist-ok">✔ Lista</span>` : ""}
-        ${!checklistVacio && !checklistCompleto ? `<span class="badge-checklist-pendiente">📦 Pendiente</span>` : ""}
+            <div class="${statusClass}">${evento.status || "-"}</div>
+            ${pagadoBadge}
+            ${multidiaBadge}
+            ${checklistCompleto ? `<span class="badge-checklist-ok">✔ Lista</span>` : ""}
+            ${!checklistVacio && !checklistCompleto ? `<span class="badge-checklist-pendiente">📦 Pendiente</span>` : ""}
         </div>
       </div>
       <div class="event-card__body">
@@ -194,8 +197,36 @@ export function registerEventDetailModal(deps) {
                 👥 <span class="${staffColorClass}">${textoStaff}</span>
                 <span class="detail-staff-conteo"> · ✔ ${confirmados} · ⏳ ${pendientes} · ❌ ${rechazados}</span>
                 ${evento.notes ? `<br>📝 <em class="detail-notes">${evento.notes}</em>` : ""}
-                ${evento.invoiceNumber ? `<br>🧾 Factura: <strong>${evento.invoiceType || ""} ${evento.invoiceNumber}</strong>` : ""}
+                ${evento.presupuestoURL ? `<br>📄 Presupuesto: <a href="${evento.presupuestoURL}" target="_blank" class="detail-maps-link">Ver</a>` : ""}
+                ${evento.invoiceNumber ? `<br>🧾 Factura: <strong>${evento.invoiceType || ""} ${evento.invoiceNumber}</strong>${evento.facturaURL ? ` <a href="${evento.facturaURL}" target="_blank" class="detail-maps-link">Ver</a>` : ""}` : ""}
                 ${alquileresDetalle}
+                ${evento.esMultidia && evento.jornadas?.length > 0 ? `
+  <div class="detail-jornadas">
+    <div class="detail-jornadas-titulo">📅 Jornadas</div>
+    ${evento.jornadas.map((j, i) => {
+                const fecha = j.fecha
+                    ? new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR")
+                    : `Jornada ${i + 1}`;
+                const totalCheck = j.checklist?.length || 0;
+                const preparados = j.checklist?.filter(c => c.preparado).length || 0;
+                const staffAsig = j.mensajesEnviados?.length || 0;
+                const confirmados = j.mensajesEnviados?.filter(m => m.estado === "confirmado").length || 0;
+                return `
+        <div class="detail-jornada-item">
+          <div class="detail-jornada-fecha">${fecha}</div>
+          <div class="detail-jornada-info">
+            🍽 ${j.tipo || "-"}<br>
+            📍 ${j.lugar || "-"}<br>
+            🕒 ${j.horaInicio || "-"} a ${j.horaFin || "-"}
+            ${staffAsig > 0 ? `<br>👥 ${confirmados}/${staffAsig} staff confirmado` : ""}
+            ${totalCheck > 0 ? `<br>📦 ${preparados}/${totalCheck} ítems preparados` : ""}
+            ${j.notas ? `<br>📝 <em>${j.notas}</em>` : ""}
+          </div>
+        </div>
+      `;
+            }).join("")}
+  </div>
+` : ""}
               </div>
             `;
         }
@@ -272,14 +303,7 @@ export function registerEventDetailModal(deps) {
             };
         }
 
-        if (presupuestoBtn) {
-            if (evento.presupuestoURL) {
-                presupuestoBtn.style.display = "flex";
-                presupuestoBtn.onclick = () => window.open(evento.presupuestoURL, "_blank");
-            } else {
-                presupuestoBtn.style.display = "none";
-            }
-        }
+        if (presupuestoBtn) presupuestoBtn.style.display = "none";
 
         document.getElementById("modalDetalleEvento").style.display = "flex";
     };

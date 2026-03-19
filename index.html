@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDOEYBKUlPqplFonjOKYagQdGUP352xNcg&libraries=places&loading=async"></script>
-  <script type="module" src="./js/main.js?v=2.0"></script>
+  <script type="module" src="./js/main.js?v=3.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="icon" href="logoB.png" />
 
@@ -176,17 +176,25 @@
         <div class="form-group">
           <label>CUIT/DNI</label><input type="text" id="cuit" />
         </div>
-        <div class="form-group">
-          <label for="invoiceType">Tipo de Factura:</label>
-          <select id="invoiceType">
-            <option value="B/C">Factura B/C</option>
-            <option value="A">Factura A</option>
-          </select>
+        <div class="form-group form-group--full">
+          <label>Factura</label>
+          <div class="factura-row">
+            <select id="invoiceType">
+              <option value="B/C">B/C</option>
+              <option value="A">A</option>
+            </select>
+            <input type="text" id="invoiceNumber" placeholder="Nº factura" />
+          </div>
+          <div class="factura-acciones">
+            <button type="button" id="btnSubirFactura" class="btn-presupuesto btn-presupuesto--subir">📎 Subir</button>
+            <button type="button" id="btnVerFactura" class="btn-presupuesto btn-presupuesto--ver"
+              style="display:none;">👁 Ver</button>
+            <button type="button" id="btnEliminarFactura" class="btn-presupuesto btn-presupuesto--eliminar"
+              style="display:none;">🗑 Quitar</button>
+            <input type="file" id="facturaFile" accept=".pdf,image/*" class="presupuesto-file-input">
+          </div>
+          <div id="facturaInfo" class="presupuesto-info">No hay factura adjunta.</div>
         </div>
-        <div class="form-group">
-          <label>Nro Factura</label><input type="text" id="invoiceNumber" />
-        </div>
-
         <div class="form-group">
           <label>Lugar</label>
           <div class="place-input-wrap">
@@ -230,11 +238,21 @@
             <option value="true">Sí</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Nro Factura</label><input type="text" id="invoiceNumber" />
-        </div>
+      </div>
+      <div class="form-group form-group--full">
+        <label class="checkbox-label-inline">
+          <input type="checkbox" id="esMultidia" onchange="window.toggleMultidia()">
+          <span>¿Evento de varios días?</span>
+        </label>
       </div>
 
+      <div id="jornadasContainer" class="jornadas-container" style="display:none;">
+        <div class="jornadas-header">
+          <div class="jornadas-titulo">📅 Jornadas</div>
+          <button type="button" onclick="window.agregarJornada()" class="btn-agregar-jornada">+ Agregar jornada</button>
+        </div>
+        <div id="jornadasLista"></div>
+      </div>
       <div class="form-group">
         <label>Notas</label><textarea id="notes"></textarea>
       </div>
@@ -283,9 +301,16 @@
     <div id="staffSection" style="display:none;">
       <div class="staff-section-inner">
         <div class="staff-section-title">👥 Gestionar Staff</div>
-        <div class="staff-add-row">
-          <input type="text" id="mozoNombre" placeholder="Nombre" class="staff-input">
-          <input type="text" id="mozoTelefono" placeholder="Teléfono" class="staff-input">
+        <div class="staff-add-form">
+          <div class="staff-add-grid">
+            <input type="text" id="mozoNombre" placeholder="Nombre" class="staff-input">
+            <input type="text" id="mozoTelefono" placeholder="Teléfono" class="staff-input">
+            <input type="text" id="mozoDni" placeholder="DNI" class="staff-input">
+            <select id="mozoCategoria" class="staff-input">
+              <option value="Mozo">Mozo</option>
+              <option value="Cocina">Cocina</option>
+            </select>
+          </div>
           <button onclick="guardarMozo()" class="btn-staff-agregar">+ Agregar</button>
         </div>
         <div class="staff-section-divider"></div>

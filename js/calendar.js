@@ -41,9 +41,13 @@ export function initCalendar() {
     // --- LÓGICA DE CLIC EN DÍA ---
     dateClick: function (info) {
       const selectedDate = info.dateStr;
-      const eventsToday = (window.allEventsData || []).filter(
-        (e) => e.date === selectedDate,
-      );
+      const eventsToday = (window.allEventsData || []).filter((e) => {
+        if (e.date === selectedDate) return true;
+        if (e.esMultidia && e.jornadas?.length > 0) {
+          return e.jornadas.some(j => j.fecha === selectedDate);
+        }
+        return false;
+      });
       const summaryEl = document.getElementById("daySummary");
 
       if (summaryEl) {
@@ -98,7 +102,8 @@ export function initCalendar() {
     },
 
     eventClick: function (info) {
-      window.abrirModalDetalle(info.event.id);
+      const id = info.event.extendedProps._eventoId || info.event.id;
+      window.abrirModalDetalle(id);
     },
 
     eventDisplay: "block",
@@ -133,14 +138,29 @@ function loadCalendarEvents() {
         Cancelado: "#c0392b",
       };
 
-      events.push({
-        id: d.id,
-        title: e.client,
-        start: e.date,
-        backgroundColor: colors[e.status] || "#ccc",
-        borderColor: colors[e.status] || "#ccc",
-        extendedProps: e,
-      });
+      if (e.esMultidia && e.jornadas?.length > 0) {
+        // Para eventos multidia, crear un evento por jornada
+        e.jornadas.forEach((jornada, idx) => {
+          if (!jornada.fecha) return;
+          events.push({
+            id: `${d.id}_jornada_${idx}`,
+            title: `${e.client} (J${idx + 1})`,
+            start: jornada.fecha,
+            backgroundColor: colors[e.status] || "#ccc",
+            borderColor: colors[e.status] || "#ccc",
+            extendedProps: { ...e, _eventoId: d.id },
+          });
+        });
+      } else {
+        events.push({
+          id: d.id,
+          title: e.client,
+          start: e.date,
+          backgroundColor: colors[e.status] || "#ccc",
+          borderColor: colors[e.status] || "#ccc",
+          extendedProps: e,
+        });
+      }
     });
 
     calendar.removeAllEvents();

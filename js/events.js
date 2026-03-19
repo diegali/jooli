@@ -3,6 +3,9 @@ import {
   actualizarUIBudget,
   subirPresupuestoEvento,
   eliminarPresupuestoEvento,
+  actualizarUIFactura,
+  subirFacturaEvento,
+  eliminarFacturaEvento,
 } from "./events/events-budget.js";
 import {
   renderFilteredEvents,
@@ -815,6 +818,264 @@ export function initEvents() {
       );
     });
   }
+
+  const facturaFile = document.getElementById("facturaFile");
+  const btnSubirFactura = document.getElementById("btnSubirFactura");
+  const btnVerFactura = document.getElementById("btnVerFactura");
+  const btnEliminarFactura = document.getElementById("btnEliminarFactura");
+
+  if (btnSubirFactura && facturaFile) {
+    btnSubirFactura.addEventListener("click", () => {
+      if (!editingId) {
+        mostrarAvisoSimple("Evento no guardado", "Primero guardá el evento para poder adjuntar la factura.", "⚠️");
+        return;
+      }
+      facturaFile.click();
+    });
+
+    facturaFile.addEventListener("change", async () => {
+      await subirFacturaEvento(editingId, { storage, db, auth });
+      facturaFile.value = "";
+    });
+  }
+
+  if (btnEliminarFactura) {
+    btnEliminarFactura.addEventListener("click", () => {
+      const eventoActual = window.allEventsData.find(ev => ev.id === editingId);
+      const nombreArchivo = eventoActual?.facturaNombre || "esta factura";
+      mostrarAvisoSimple(
+        "¿Eliminar factura?",
+        `¿Seguro que querés eliminar <strong>${nombreArchivo}</strong>?<br><br>` +
+        `<button onclick="window.confirmarEliminarFactura()" class="btn-aviso-confirmar">Sí, eliminar</button>
+       <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
+        "🗑️",
+        false
+      );
+    });
+  }
+
+  window.toggleMultidia = function () {
+    const checked = document.getElementById("esMultidia")?.checked;
+    const container = document.getElementById("jornadasContainer");
+    if (container) container.style.display = checked ? "block" : "none";
+    if (checked && (!window._jornadasActuales || window._jornadasActuales.length === 0)) {
+      window.agregarJornada();
+    }
+  };
+
+  window.agregarJornada = function () {
+    if (!window._jornadasActuales) window._jornadasActuales = [];
+    window._jornadasActuales.push({
+      fecha: "",
+      tipo: "Catering Completo",
+      lugar: "",
+      horaInicio: "",
+      horaFin: "",
+      horaPresentacion: "",
+      notas: "",
+    });
+    window.renderJornadas();
+  };
+
+  window.eliminarJornada = function (index) {
+    window._jornadasActuales.splice(index, 1);
+    window.renderJornadas();
+  };
+
+  window.actualizarJornada = function (index, campo, valor) {
+    if (!window._jornadasActuales?.[index]) return;
+
+    if (campo === "fecha") {
+      const fechaEvento = document.getElementById("date")?.value;
+
+      if (fechaEvento && valor < fechaEvento) {
+        mostrarAvisoSimple(
+          "Fecha inválida",
+          "La fecha de la jornada no puede ser anterior a la fecha del evento.",
+          "⚠️"
+        );
+        // Resetear el input
+        window.renderJornadas();
+        return;
+      }
+
+      // Verificar que no sea anterior a la jornada previa
+      if (index > 0) {
+        const fechaAnterior = window._jornadasActuales[index - 1].fecha;
+        if (fechaAnterior && valor <= fechaAnterior) {
+          mostrarAvisoSimple(
+            "Fecha inválida",
+            `La fecha de la jornada ${index + 1} debe ser posterior a la jornada ${index}.`,
+            "⚠️"
+          );
+          window.renderJornadas();
+          return;
+        }
+      }
+    }
+
+    window._jornadasActuales[index][campo] = valor;
+  };
+
+  window.renderJornadas = function () {
+    const lista = document.getElementById("jornadasLista");
+    if (!lista) return;
+
+    if (window._jornadasActuales.length === 0) {
+      lista.innerHTML = "<p class='jornada-vacia'>No hay jornadas cargadas.</p>";
+      return;
+    }
+
+    lista.innerHTML = window._jornadasActuales.map((j, i) => `
+    <div class="jornada-card">
+      <div class="jornada-card-header">
+        <span class="jornada-numero">Jornada ${i + 1}</span>
+        <button type="button" onclick="window.eliminarJornada(${i})" class="btn-catalogo-eliminar">🗑</button>
+      </div>
+      <div class="jornada-grid">
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" value="${j.fecha}" onchange="window.actualizarJornada(${i}, 'fecha', this.value)">
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select onchange="window.actualizarJornada(${i}, 'tipo', this.value)">
+            ${["Catering Completo", "Coffee", "Almuerzo/Cena informal", "Almuerzo/Cena formal", "Asado", "Cumpleaños", "Cumpleaños de 15"]
+        .map(t => `<option ${j.tipo === t ? "selected" : ""}>${t}</option>`).join("")}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Lugar</label>
+          <input type="text" value="${j.lugar}" onchange="window.actualizarJornada(${i}, 'lugar', this.value)">
+        </div>
+        <div class="form-group">
+          <label>Hora inicio</label>
+          <input type="time" value="${j.horaInicio}" onchange="window.actualizarJornada(${i}, 'horaInicio', this.value)">
+        </div>
+        <div class="form-group">
+          <label>Hora fin</label>
+          <input type="time" value="${j.horaFin}" onchange="window.actualizarJornada(${i}, 'horaFin', this.value)">
+        </div>
+        <div class="form-group">
+          <label>Presentación</label>
+          <input type="time" value="${j.horaPresentacion}" onchange="window.actualizarJornada(${i}, 'horaPresentacion', this.value)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea onchange="window.actualizarJornada(${i}, 'notas', this.value)">${j.notas}</textarea>
+      </div>
+      <div class="jornada-acciones">
+        <button type="button"
+          onclick="window.abrirStaffJornada(${i})"
+          class="btn-jornada-staff">
+          👥 Staff
+          ${j.mensajesEnviados?.length > 0 ? `<span class="jornada-staff-badge">${j.mensajesEnviados.length}</span>` : ""}
+        </button>
+        <button type="button"
+          onclick="window.abrirChecklistJornada(${i})"
+          class="btn-jornada-checklist">
+          📦 Checklist
+          ${j.checklist?.length > 0 ? `<span class="jornada-staff-badge">${j.checklist.filter(c => c.preparado).length}/${j.checklist.length}</span>` : ""}
+        </button>
+      </div>
+    </div>
+  `).join("");
+  };
+
+  window.abrirStaffJornada = function (jornadaIndex) {
+    if (!window.editingId) {
+      mostrarAvisoSimple("Guardá primero", "Guardá el evento antes de gestionar el staff de cada jornada.", "⚠️");
+      return;
+    }
+
+    const evento = window.allEventsData.find(e => e.id === window.editingId);
+    if (!evento) return;
+
+    // Sincronizamos jornadas del formulario al evento en memoria
+    evento.jornadas = window._jornadasActuales ? [...window._jornadasActuales] : [];
+
+    const jornada = evento.jornadas[jornadaIndex];
+    if (!jornada) return;
+
+    if (!jornada.mensajesEnviados) jornada.mensajesEnviados = [];
+
+    // Guardamos referencia de qué jornada estamos editando
+    window._jornadaStaffActual = { eventoId: window.editingId, jornadaIndex };
+
+    // Reutilizamos el modal de staff del evento pero apuntando a la jornada
+    const modal = document.getElementById("modalGestionStaff");
+    const titulo = document.getElementById("tituloModalStaff");
+    const resumen = document.getElementById("resumenStaffEvento");
+
+    if (!modal || !titulo) return;
+
+    const fecha = jornada.fecha
+      ? new Date(jornada.fecha + "T00:00:00").toLocaleDateString("es-AR")
+      : `Jornada ${jornadaIndex + 1}`;
+
+    titulo.innerText = `👥 Staff · ${fecha}`;
+    if (resumen) resumen.innerHTML = "";
+
+    modal.dataset.eventId = window.editingId;
+    modal.dataset.jornadaIdx = jornadaIndex;
+
+    window._modoStaffJornada = true;
+    window.abrirModalGestionStaff(window.editingId);
+  };
+
+  window.abrirChecklistJornada = function (jornadaIndex) {
+    if (!window.editingId) {
+      mostrarAvisoSimple("Guardá primero", "Guardá el evento antes de gestionar el checklist de cada jornada.", "⚠️");
+      return;
+    }
+
+    const evento = window.allEventsData.find(e => e.id === window.editingId);
+    if (!evento) return;
+
+    // Sincronizar jornadas del formulario al evento
+    evento.jornadas = window._jornadasActuales ? [...window._jornadasActuales] : [];
+
+    const jornada = evento.jornadas[jornadaIndex];
+    if (!jornada) return;
+
+    if (!jornada.checklist) jornada.checklist = [];
+
+    // Guardamos referencia de qué jornada estamos editando
+    window._jornadaChecklistActual = { eventoId: window.editingId, jornadaIndex };
+
+    // Reutilizamos el modal de checklist apuntando a la jornada
+    const fecha = jornada.fecha
+      ? new Date(jornada.fecha + "T00:00:00").toLocaleDateString("es-AR")
+      : `Jornada ${jornadaIndex + 1}`;
+
+    // Creamos un objeto "evento virtual" para la jornada
+    const eventoJornada = {
+      ...jornada,
+      id: window.editingId,
+      client: evento.client,
+      date: jornada.fecha || evento.date,
+      _esJornada: true,
+      _jornadaIndex: jornadaIndex,
+      _eventoReal: evento,
+    };
+
+    window.eventoChecklistActual = eventoJornada;
+
+    const titulo = document.getElementById("tituloModalChecklist");
+    if (titulo) titulo.innerText = `📦 ${fecha} · ${evento.client}`;
+
+    const modal = document.getElementById("modalChecklist");
+    if (modal) {
+      window.cambiarPestanaChecklist("checklist");
+      modal.style.display = "flex";
+    }
+  };
+
+  window.confirmarEliminarFactura = async function () {
+    document.getElementById("modalAvisoSimple").style.display = "none";
+    await eliminarFacturaEvento(editingId, { db, storage, auth });
+  };
 
   registerEventDetailModal({
     getAllEvents: () => window.allEventsData || [],

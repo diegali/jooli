@@ -141,3 +141,71 @@ export async function eliminarPresupuestoEvento(editingId, deps) {
         );
     }
 }
+
+export function actualizarUIFactura(evento, deps) {
+    const { auth } = deps;
+    const verBtn = document.getElementById("btnVerFactura");
+    const eliminarBtn = document.getElementById("btnEliminarFactura");
+    const subirBtn = document.getElementById("btnSubirFactura");
+    const infoEl = document.getElementById("facturaInfo");
+    const puedeEditar = puedeEditarPresupuesto(auth);
+
+    if (infoEl) {
+        infoEl.textContent = evento?.facturaNombre
+            ? `Archivo: ${evento.facturaNombre}`
+            : "No hay factura adjunta.";
+    }
+    if (subirBtn) subirBtn.style.display = puedeEditar ? "inline-block" : "none";
+    if (verBtn) verBtn.style.display = evento?.facturaURL ? "inline-block" : "none";
+    if (eliminarBtn) eliminarBtn.style.display = puedeEditar && evento?.facturaURL ? "inline-block" : "none";
+
+    if (verBtn && evento?.facturaURL) {
+        verBtn.onclick = () => window.open(evento.facturaURL, "_blank");
+    }
+}
+
+export async function subirFacturaEvento(editingId, deps) {
+    const { storage, db, auth } = deps;
+    if (!editingId) {
+        window.mostrarAvisoSimple("Evento sin guardar", "Primero guardá el evento antes de subir la factura.", "⚠️");
+        return;
+    }
+
+    const input = document.getElementById("facturaFile");
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    const filePath = `facturas/${editingId}/${file.name}`;
+    const storageRef = ref(storage, filePath);
+
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+
+    const eventoRef = doc(db, "events", editingId);
+    const facturaData = { facturaURL: url, facturaNombre: file.name, facturaPath: filePath };
+
+    await updateDoc(eventoRef, facturaData);
+
+    const eventoEnMemoria = (window.allEventsData || []).find(e => e.id === editingId);
+    if (eventoEnMemoria) Object.assign(eventoEnMemoria, facturaData);
+
+    actualizarUIFactura(facturaData, { auth });
+    window.mostrarAvisoSimple("Factura subida", "La factura se adjuntó correctamente.", "✅");
+}
+
+export async function eliminarFacturaEvento(editingId, deps) {
+    const { db, storage, auth } = deps;
+    if (!editingId) return;
+
+    const evento = (window.allEventsData || []).find(e => e.id === editingId);
+    if (!evento?.facturaPath) return;
+
+    try {
+        await deleteObject(ref(storage, evento.facturaPath));
+        await updateDoc(doc(db, "events", editingId), { facturaURL: "", facturaNombre: "", facturaPath: "" });
+        actualizarUIFactura(null, { auth });
+        window.mostrarAvisoSimple("Factura eliminada", "La factura se eliminó correctamente.", "✅");
+    } catch (error) {
+        window.mostrarAvisoSimple("Error", "No se pudo eliminar la factura.", "❌");
+    }
+}

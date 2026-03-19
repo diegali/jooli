@@ -555,3 +555,198 @@
 .stats-chart-wrap {
   margin-top: 10px;
 }
+
+.form-group--full {
+  grid-column: 1 / -1;
+}
+
+.factura-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.factura-row select {
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.factura-row input[type="text"] {
+  flex: 1;
+}
+
+.factura-acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.checkbox-label-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.checkbox-label-inline input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #d4af37;
+}
+
+.jornadas-container {
+  grid-column: 1 / -1;
+  background: #f4f1eb;
+  border: 1px solid #e0dbd0;
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 4px;
+}
+
+.jornadas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.jornadas-titulo {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+}
+
+.btn-agregar-jornada {
+  background: #d4af37;
+  color: #111;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.jornada-card {
+  background: white;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+  border: 1px solid #e0dbd0;
+}
+
+.jornada-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.jornada-numero {
+  font-size: 13px;
+  font-weight: 700;
+  color: #d4af37;
+}
+
+.jornada-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.jornada-vacia {
+  color: #888;
+  font-size: 13px;
+  text-align: center;
+}
+
+.jornada-acciones {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-jornada-staff {
+  flex: 1;
+  padding: 10px;
+  background: #9b59b6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.jornada-staff-badge {
+  background: white;
+  color: #9b59b6;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-jornada-checklist {
+  flex: 1;
+  padding: 10px;
+  background: #16a085;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.detail-jornadas {
+  margin-top: 14px;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+
+.detail-jornadas-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.detail-jornada-item {
+  background: #f4f1eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.detail-jornada-fecha {
+  font-size: 13px;
+  font-weight: 700;
+  color: #d4af37;
+  margin-bottom: 4px;
+}
+
+.detail-jornada-info {
+  font-size: 13px;
+  color: #444;
+  line-height: 1.7;
+}

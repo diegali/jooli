@@ -430,12 +430,29 @@ window.eliminarChecklistItem = async function (index) {
 async function guardarChecklistEnFirestore(evento) {
   if (!evento?.id) return;
   try {
-    await updateDoc(doc(db, "events", evento.id), {
-      checklist: evento.checklist || [],
-    });
-    const index = window.allEventsData.findIndex((e) => e.id === evento.id);
-    if (index !== -1) {
-      window.allEventsData[index].checklist = [...(evento.checklist || [])];
+    if (evento._esJornada) {
+      // Guardar en la jornada correspondiente
+      const eventoReal = evento._eventoReal;
+      const jornadaIndex = evento._jornadaIndex;
+
+      eventoReal.jornadas[jornadaIndex].checklist = evento.checklist || [];
+
+      // Sincronizar con el formulario si está abierto
+      if (window._jornadasActuales?.[jornadaIndex]) {
+        window._jornadasActuales[jornadaIndex].checklist = evento.checklist || [];
+      }
+
+      await updateDoc(doc(db, "events", evento.id), {
+        jornadas: eventoReal.jornadas,
+      });
+    } else {
+      await updateDoc(doc(db, "events", evento.id), {
+        checklist: evento.checklist || [],
+      });
+      const index = window.allEventsData.findIndex((e) => e.id === evento.id);
+      if (index !== -1) {
+        window.allEventsData[index].checklist = [...(evento.checklist || [])];
+      }
     }
   } catch (error) {
     console.error("Error al guardar checklist:", error);

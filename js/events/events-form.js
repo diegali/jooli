@@ -1,4 +1,5 @@
 // js/events/events-form.js
+import { actualizarUIFactura } from "./events-budget.js";
 
 export function resetForm({ setEditingId, actualizarUIBudget }) {
     setEditingId(null);
@@ -16,6 +17,13 @@ export function resetForm({ setEditingId, actualizarUIBudget }) {
             if (el.type === "checkbox") {
                 el.checked = false;
             }
+            window._jornadasActuales = [];
+            const jornadasContainer = document.getElementById("jornadasContainer");
+            if (jornadasContainer) jornadasContainer.style.display = "none";
+            const esMultidia = document.getElementById("esMultidia");
+            if (esMultidia) esMultidia.checked = false;
+            document.getElementById("jornadasLista").innerHTML = "";
+
         });
 
         actualizarUIBudget(null);
@@ -70,6 +78,8 @@ export function getFormData() {
                 document.getElementById("alqMobiliarioTrabajo")?.checked || false,
             notas: document.getElementById("alqNotas")?.value || "",
         },
+        esMultidia: document.getElementById("esMultidia")?.checked || false,
+        jornadas: window._jornadasActuales || [],
         staffAsignado: selectedStaff,
     };
 }
@@ -101,6 +111,7 @@ export async function fillFormForEdit(evento, id, deps) {
         "notes",
         "invoiceType",
         "placeUrl",
+        "esMultidia",
     ];
 
     fields.forEach((field) => {
@@ -203,4 +214,35 @@ export async function fillFormForEdit(evento, id, deps) {
         btnAbrirSeleccion.disabled = false;
         btnAbrirSeleccion.classList.remove("completo");
     }
+
+    // Factura
+    const verFacturaBtn = document.getElementById("btnVerFactura");
+    const eliminarFacturaBtn = document.getElementById("btnEliminarFactura");
+    const subirFacturaBtn = document.getElementById("btnSubirFactura");
+    const facturaInfoEl = document.getElementById("facturaInfo");
+
+    if (facturaInfoEl) {
+        facturaInfoEl.textContent = evento.facturaNombre
+            ? `Archivo: ${evento.facturaNombre}`
+            : "No hay factura adjunta.";
+    }
+    if (subirFacturaBtn) subirFacturaBtn.style.display = puedeEditar ? "inline-block" : "none";
+    if (verFacturaBtn) verFacturaBtn.style.display = evento.facturaURL ? "inline-block" : "none";
+    if (eliminarFacturaBtn) eliminarFacturaBtn.style.display = puedeEditar && evento.facturaURL ? "inline-block" : "none";
+
+    if (verFacturaBtn && evento.facturaURL) {
+        verFacturaBtn.onclick = () => window.open(evento.facturaURL, "_blank");
+    }
+
+    if (eventoPasado) {
+        if (subirFacturaBtn) subirFacturaBtn.style.display = "none";
+        if (eliminarFacturaBtn) eliminarFacturaBtn.style.display = "none";
+    }
+    // Jornadas
+    const esMultidiaEl = document.getElementById("esMultidia");
+    const jornadasCont = document.getElementById("jornadasContainer");
+    window._jornadasActuales = evento.jornadas ? [...evento.jornadas] : [];
+    if (esMultidiaEl) esMultidiaEl.checked = evento.esMultidia || false;
+    if (jornadasCont) jornadasCont.style.display = evento.esMultidia ? "block" : "none";
+    if (evento.esMultidia) window.renderJornadas();
 }
