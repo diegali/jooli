@@ -3,7 +3,6 @@ import {
   actualizarUIBudget,
   subirPresupuestoEvento,
   eliminarPresupuestoEvento,
-  actualizarUIFactura,
   subirFacturaEvento,
   eliminarFacturaEvento,
 } from "./events/events-budget.js";
@@ -15,15 +14,16 @@ import { resetForm, getFormData } from "./events/events-form.js";
 import {
   getCurrentUserName,
   formatDateShort,
-  formatDate,
 } from "./events/events-utils.js";
+import { initJornadas }  from "./events/events-jornadas.js";
+import { initMaps }      from "./events/events-maps.js";
+import { initAvisos }    from "./events/events-avisos.js";
 import { db, auth, storage } from "./auth.js";
 import { renderStaffSelection } from "./staff.js";
 import {
   collection,
   onSnapshot,
   query,
-  orderBy,
   addDoc,
   getDoc,
   updateDoc,
@@ -35,11 +35,8 @@ import {
 let editingId = null;
 window.allEventsData = [];
 
-let eventoPendienteConfirmacion = null;
-let modalConfirmacionAbierto = false;
-
 function setEditingId(value) {
-  editingId = value;
+  editingId        = value;
   window.editingId = value;
 }
 
@@ -50,6 +47,9 @@ function resetEventForm() {
   });
 }
 
+// ===============================
+// RENDER
+// ===============================
 function rerenderEvents() {
   renderFilteredEvents(window.allEventsData || [], {
     updateStats,
@@ -63,12 +63,12 @@ function rerenderEvents() {
   });
 
   setTimeout(() => {
-    // Primero ocultar títulos de MES sin cards visibles
     document.querySelectorAll(".eventos-mes-titulo").forEach((titulo) => {
-      let siguiente = titulo.nextElementSibling;
+      let siguiente    = titulo.nextElementSibling;
       let tieneVisibles = false;
 
-      while (siguiente && !siguiente.classList.contains("eventos-mes-titulo") &&
+      while (siguiente &&
+        !siguiente.classList.contains("eventos-mes-titulo") &&
         !siguiente.classList.contains("eventos-seccion-titulo")) {
         if (siguiente.classList.contains("event-card") && siguiente.style.display !== "none") {
           tieneVisibles = true;
@@ -76,13 +76,11 @@ function rerenderEvents() {
         }
         siguiente = siguiente.nextElementSibling;
       }
-
       titulo.style.display = tieneVisibles ? "" : "none";
     });
 
-    // Después ocultar títulos de SECCIÓN que no tengan ningún mes visible
     document.querySelectorAll(".eventos-seccion-titulo").forEach((seccion) => {
-      let siguiente = seccion.nextElementSibling;
+      let siguiente    = seccion.nextElementSibling;
       let tieneVisibles = false;
 
       while (siguiente && !siguiente.classList.contains("eventos-seccion-titulo")) {
@@ -92,69 +90,78 @@ function rerenderEvents() {
         }
         siguiente = siguiente.nextElementSibling;
       }
-
       seccion.style.display = tieneVisibles ? "" : "none";
     });
   }, 0);
 }
 
-async function saveEvent() {
-  const eventData = getFormData();
+// ===============================
+// CRUD
+// ===============================
+function prepararEventData(eventData) {
+  if (eventData.jornadas) {
+    eventData.jornadas = eventData.jornadas.map(j => ({
+      ...j,
+      alquileres: j.alquileres && Object.keys(j.alquileres).length > 0
+        ? j.alquileres
+        : { vajilla: false, manteleria: false, mobiliario: false, mobiliarioTrabajo: false, notas: "" },
+    }));
+  }
+  if (eventData.esMultidia && eventData.jornadas?.length > 0) {
+    eventData.date = eventData.jornadas[0].fecha || "";
+  }
+  return eventData;
+}
 
+function validarEventData(eventData) {
   if (!eventData.client) {
     mostrarAvisoSimple("Faltan datos", "Por favor completá al menos <strong>cliente</strong> antes de guardar.", "⚠️");
-    return;
+    return false;
   }
-
   if (!eventData.esMultidia && !eventData.date) {
     mostrarAvisoSimple("Faltan datos", "Por favor completá al menos <strong>fecha</strong> y <strong>cliente</strong> antes de guardar.", "⚠️");
-    return;
+    return false;
   }
-
   if (eventData.esMultidia) {
     if (!eventData.jornadas || eventData.jornadas.length === 0) {
       mostrarAvisoSimple("Faltan jornadas", "Agregá al menos una jornada al evento.", "⚠️");
-      return;
+      return false;
     }
     const jornadaSinFecha = eventData.jornadas.findIndex(j => !j.fecha);
     if (jornadaSinFecha !== -1) {
       mostrarAvisoSimple("Fecha faltante", `La jornada ${jornadaSinFecha + 1} no tiene fecha asignada.`, "⚠️");
-      return;
+      return false;
     }
   }
-  const userName = getCurrentUserName();
+  return true;
+}
+
+async function saveEvent() {
+  const eventData = getFormData();
+  if (!validarEventData(eventData)) return;
+
+  const userName  = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
+
   if (!["Realizado", "Cancelado"].includes(eventData.status)) {
     eventData.realizacionConfirmada = false;
   }
-  eventData.ultimoCambioPor = userName;
+  eventData.ultimoCambioPor  = userName;
   eventData.mensajesEnviados = [];
 
+  prepararEventData(eventData);
+
   try {
-    // Limpiar valores undefined y objetos vacíos en jornadas
-    if (eventData.jornadas) {
-      eventData.jornadas = eventData.jornadas.map(j => ({
-        ...j,
-        alquileres: j.alquileres && Object.keys(j.alquileres).length > 0 ? j.alquileres : {
-          vajilla: false, manteleria: false, mobiliario: false, mobiliarioTrabajo: false, notas: ""
-        }
-      }));
-    }
-    if (eventData.esMultidia && eventData.jornadas?.length > 0) {
-      eventData.date = eventData.jornadas[0].fecha || "";
-    }
     await addDoc(collection(db, "events"), eventData);
-
     await addDoc(collection(db, "notificaciones"), {
-      mensaje: `${userName} creó el evento "${eventData.client}"${eventData.date ? ` del ${formatDateShort(eventData.date)}` : ""}`,
-      leida: false,
-      creadoPorEmail: userEmail,
-      fecha: serverTimestamp(),
+      mensaje:         `${userName} creó el evento "${eventData.client}"${eventData.date ? ` del ${formatDateShort(eventData.date)}` : ""}`,
+      leida:           false,
+      creadoPorEmail:  userEmail,
+      fecha:           serverTimestamp(),
     });
-
     resetEventForm();
   } catch (error) {
-    console.error("Error al guardar:", error.code, error.message, error);
+    console.error("Error al guardar:", error);
     mostrarAvisoSimple("Error", `No se pudo guardar: ${error.message}`, "❌");
   }
 }
@@ -163,30 +170,11 @@ async function updateExistingEvent() {
   if (!editingId) return;
 
   const eventData = getFormData();
+  if (!validarEventData(eventData)) return;
 
-  if (!eventData.client) {
-    mostrarAvisoSimple("Faltan datos", "Por favor completá al menos <strong>cliente</strong> antes de guardar.", "⚠️");
-    return;
-  }
-
-  if (!eventData.esMultidia && !eventData.date) {
-    mostrarAvisoSimple("Faltan datos", "Por favor completá al menos <strong>fecha</strong> y <strong>cliente</strong> antes de guardar.", "⚠️");
-    return;
-  }
-
-  if (eventData.esMultidia) {
-    if (!eventData.jornadas || eventData.jornadas.length === 0) {
-      mostrarAvisoSimple("Faltan jornadas", "Agregá al menos una jornada al evento.", "⚠️");
-      return;
-    }
-    const jornadaSinFecha = eventData.jornadas.findIndex(j => !j.fecha);
-    if (jornadaSinFecha !== -1) {
-      mostrarAvisoSimple("Fecha faltante", `La jornada ${jornadaSinFecha + 1} no tiene fecha asignada.`, "⚠️");
-      return;
-    }
-  }
-  const userName = getCurrentUserName();
+  const userName  = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
+
   delete eventData.presupuestoURL;
   delete eventData.presupuestoNombre;
   delete eventData.presupuestoPath;
@@ -194,484 +182,21 @@ async function updateExistingEvent() {
   if (!["Realizado", "Cancelado"].includes(eventData.status)) {
     eventData.realizacionConfirmada = false;
   }
-
   eventData.ultimoCambioPor = userName;
 
+  prepararEventData(eventData);
+
   try {
-    // Limpiar valores undefined y objetos vacíos en jornadas
-    if (eventData.jornadas) {
-      eventData.jornadas = eventData.jornadas.map(j => ({
-        ...j,
-        alquileres: j.alquileres && Object.keys(j.alquileres).length > 0 ? j.alquileres : {
-          vajilla: false, manteleria: false, mobiliario: false, mobiliarioTrabajo: false, notas: ""
-        }
-      }));
-    }
-    if (eventData.esMultidia && eventData.jornadas?.length > 0) {
-      eventData.date = eventData.jornadas[0].fecha || "";
-    }
     await updateDoc(doc(db, "events", editingId), eventData);
-
     await addDoc(collection(db, "notificaciones"), {
-      mensaje: `${userName} modificó el evento "${eventData.client}"${eventData.date ? ` del ${formatDateShort(eventData.date)}` : ""}`,
-      leida: false,
-      creadoPorEmail: userEmail,
-      fecha: serverTimestamp(),
+      mensaje:         `${userName} modificó el evento "${eventData.client}"${eventData.date ? ` del ${formatDateShort(eventData.date)}` : ""}`,
+      leida:           false,
+      creadoPorEmail:  userEmail,
+      fecha:           serverTimestamp(),
     });
-
     resetEventForm();
   } catch (error) {
     console.error("Error al actualizar:", error);
-  }
-}
-
-function loadEvents() {
-  const q = query(collection(db, "events"));
-
-  onSnapshot(q, (snap) => {
-    window.allEventsData = [];
-
-    snap.forEach((d) => {
-      window.allEventsData.push({ ...d.data(), id: d.id });
-    });
-
-    // Ordenar por fecha (usando primera jornada para multidia)
-    window.allEventsData.sort((a, b) => {
-      const fechaA = a.esMultidia ? (a.jornadas?.[0]?.fecha || "") : (a.date || "");
-      const fechaB = b.esMultidia ? (b.jornadas?.[0]?.fecha || "") : (b.date || "");
-      return fechaA.localeCompare(fechaB);
-    });
-
-    verificarEventosPasados(window.allEventsData);
-    if (!modalConfirmacionAbierto && !window._avisosMostrados) {
-      window._avisosMostrados = true;
-      verificarAvisosPendientes(window.allEventsData);
-    }
-
-    rerenderEvents();
-  });
-}
-
-window.resetFormConfirmado = function () {
-  document.getElementById("modalAvisoSimple").style.display = "none";
-  resetEventForm();
-};
-
-// ===============================
-// GOOGLE MAPS
-// ===============================
-
-window.abrirModalMaps = async function () {
-  const modal = document.getElementById("modalMaps");
-  if (!modal) return;
-  modal.style.display = "flex";
-
-  const { Map } = await google.maps.importLibrary("maps");
-  const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-  const { PlaceAutocompleteElement, Place } = await google.maps.importLibrary("places");
-
-  // Reiniciar siempre al abrir
-  window._selectedPlace = null;
-  document.getElementById("mapPlaceInfo").textContent = "";
-
-  const map = new Map(document.getElementById("mapContainer"), {
-    center: { lat: -31.4135, lng: -64.1811 },
-    zoom: 13,
-    mapId: "JOOLI_MAP",
-  });
-  window._mapInstance = map;
-
-  const marker = new AdvancedMarkerElement({ map });
-
-  // Reemplazar el contenedor del buscador
-  const searchContainer = document.getElementById("mapsSearchContainer");
-  searchContainer.innerHTML = "";
-
-  const autocomplete = new PlaceAutocompleteElement({
-    componentRestrictions: { country: "ar" },
-  });
-  autocomplete.style.width = "100%";
-  autocomplete.style.marginBottom = "12px";
-  searchContainer.appendChild(autocomplete);
-
-  autocomplete.addEventListener("gmp-select", async (e) => {
-    const place = new Place({ id: e.placePrediction.placeId });
-
-    await place.fetchFields({
-      fields: ["displayName", "formattedAddress", "location", "googleMapsURI"],
-    });
-
-    const location = place.location;
-    map.setCenter(location);
-    map.setZoom(16);
-    marker.position = location;
-
-    window._selectedPlace = {
-      nombre: place.displayName,
-      direccion: place.formattedAddress,
-      url: place.googleMapsURI,
-    };
-
-    document.getElementById("mapPlaceInfo").textContent =
-      `📍 ${place.displayName} — ${place.formattedAddress}`;
-  });
-};
-
-window.cerrarModalMaps = function () {
-  document.getElementById("modalMaps").style.display = "none";
-};
-
-window.confirmarUbicacion = function () {
-  const place = window._selectedPlace;
-  if (!place) {
-    mostrarAvisoSimple("Sin selección", "Buscá y seleccioná un lugar primero.", "⚠️");
-    return;
-  }
-
-  const placeInput = document.getElementById("place");
-  if (placeInput) placeInput.value = place.nombre || place.direccion;
-
-  let hidden = document.getElementById("placeUrl");
-  if (!hidden) {
-    hidden = document.createElement("input");
-    hidden.type = "hidden";
-    hidden.id = "placeUrl";
-    document.getElementById("eventFormContainer").appendChild(hidden);
-  }
-  hidden.value = place.url || "";
-
-  window.cerrarModalMaps();
-};
-
-// ===============================
-// BÚSQUEDA
-// ===============================
-function initSearch() {
-  const searchInput = document.getElementById("searchInput");
-  if (!searchInput) return;
-
-  searchInput.addEventListener("input", (e) => {
-    const term = e.target.value.toLowerCase().trim();
-
-    if (!term) {
-      rerenderEvents();
-      return;
-    }
-
-    document.querySelectorAll(".event-card").forEach((card) => {
-      card.style.display = (card.dataset.cliente || "").includes(term)
-        ? ""
-        : "none";
-    });
-
-    // Ocultar títulos de sección y mes si no tienen cards visibles debajo
-    document.querySelectorAll(".eventos-seccion-titulo, .eventos-mes-titulo").forEach((titulo) => {
-      let siguiente = titulo.nextElementSibling;
-      let tieneVisibles = false;
-
-      while (siguiente && !siguiente.classList.contains("eventos-mes-titulo") &&
-        !siguiente.classList.contains("eventos-seccion-titulo")) {
-        if (siguiente.classList.contains("event-card") && siguiente.style.display !== "none") {
-          tieneVisibles = true;
-          break;
-        }
-        siguiente = siguiente.nextElementSibling;
-      }
-
-      titulo.style.display = tieneVisibles ? "" : "none";
-    });
-
-    document.querySelectorAll(".eventos-seccion-titulo").forEach((seccion) => {
-      let siguiente = seccion.nextElementSibling;
-      let tieneVisibles = false;
-
-      while (siguiente && !siguiente.classList.contains("eventos-seccion-titulo")) {
-        if (siguiente.classList.contains("eventos-mes-titulo") && siguiente.style.display !== "none") {
-          tieneVisibles = true;
-          break;
-        }
-        siguiente = siguiente.nextElementSibling;
-      }
-
-      seccion.style.display = tieneVisibles ? "" : "none";
-    });
-  });
-}
-
-// ===============================
-// STATS Y DATALIST
-// ===============================
-function updateClientDatalist(events) {
-  const datalist = document.getElementById("clientList");
-  if (!datalist) return;
-
-  const clients = [...new Set(events.map((e) => e.client))].sort();
-
-  datalist.innerHTML = clients
-    .map((name) => `<option value="${name}">`)
-    .join("");
-}
-
-function updateStats(events) {
-  const monthFilter = document.getElementById("monthFilter")?.value;
-
-  let eventosFiltrados = window.allEventsData || [];
-
-  if (monthFilter) {
-    eventosFiltrados = window.allEventsData.filter(e => {
-      return e.date && e.date.startsWith(monthFilter);
-    });
-  }
-  actualizarGrafico(window.allEventsData || []);
-
-  eventosFiltrados = eventosFiltrados.filter(e => e.status !== "Cancelado" && e.status !== "Cerrado");
-
-  const totalMes = eventosFiltrados.reduce((sum, e) => sum + Number(e.total || 0), 0);
-  const senasMes = eventosFiltrados.reduce((sum, e) => sum + Number(e.deposit || 0), 0);
-  const cobrado = eventosFiltrados.filter(e => e.paid === true).reduce((sum, e) => sum + Number(e.total || 0), 0);
-  const porCobrar = totalMes - cobrado;
-
-  const totalEl = document.getElementById("totalMes");
-  const senasEl = document.getElementById("senasMes");
-  const saldoEl = document.getElementById("saldoMes");
-  const countEl = document.getElementById("eventosMes");
-  const cobradoEl = document.getElementById("cobradoMes");
-  const porCobrarEl = document.getElementById("porCobrarMes");
-
-  if (totalEl) totalEl.innerText = `$${totalMes.toLocaleString()}`;
-  if (senasEl) senasEl.innerText = `$${senasMes.toLocaleString()}`;
-  if (saldoEl) saldoEl.innerText = `$${(totalMes - senasMes).toLocaleString()}`;
-  if (countEl) countEl.innerText = eventosFiltrados.length;
-  if (cobradoEl) cobradoEl.innerText = `$${cobrado.toLocaleString()}`;
-  if (porCobrarEl) porCobrarEl.innerText = `$${porCobrar.toLocaleString()}`;
-}
-
-function actualizarGrafico(events) {
-  const canvas = document.getElementById("chartEventosMes");
-  if (!canvas) return;
-
-  // Agrupar eventos por mes ignorando cancelados
-  const conteo = {};
-  events
-    .filter(e => e.status !== "Cancelado")
-    .forEach(e => {
-      if (!e.date) return;
-      const mes = e.date.substring(0, 7); // "2026-03"
-      conteo[mes] = (conteo[mes] || 0) + 1;
-    });
-
-  const mesesOrdenados = Object.keys(conteo).sort();
-  const labels = mesesOrdenados.map(m => {
-    const [anio, mes] = m.split("-");
-    const nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-    return `${nombres[parseInt(mes) - 1]} ${anio}`;
-  });
-  const datos = mesesOrdenados.map(m => conteo[m]);
-
-  if (window._chartEventos) {
-    window._chartEventos.destroy();
-  }
-
-  window._chartEventos = new Chart(canvas, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "Eventos",
-        data: datos,
-        backgroundColor: "#d4af37",
-        borderRadius: 6,
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { stepSize: 1 }
-        }
-      }
-    }
-  });
-}
-
-function abrirModalConfirmarRealizacion(evento) {
-  const modal = document.getElementById("modalConfirmarRealizacion");
-  const texto = document.getElementById("textoConfirmarRealizacion");
-
-  if (!modal || !texto) return;
-
-  eventoPendienteConfirmacion = evento;
-  modalConfirmacionAbierto = true;
-
-  texto.innerHTML = `
-    El evento de <strong>${evento.client || "sin cliente"}</strong><br>
-    del <strong>${formatDate(evento.date)}</strong> ya pasó.<br><br>
-    ¿Se realizó este evento?
-  `;
-
-  modal.style.display = "flex";
-}
-
-function cerrarModalConfirmarRealizacion() {
-  const modal = document.getElementById("modalConfirmarRealizacion");
-  if (!modal) return;
-
-  modal.style.display = "none";
-  eventoPendienteConfirmacion = null;
-  modalConfirmacionAbierto = false;
-
-  verificarAvisosPendientes(window.allEventsData || []);
-}
-
-window.mostrarAvisoSimple = function (titulo, mensaje, icono = "⚠️", mostrarBotonEntendido = true) {
-  const modal = document.getElementById("modalAvisoSimple");
-  const tituloEl = document.getElementById("modalAvisoTitulo");
-  const mensajeEl = document.getElementById("modalAvisoMensaje");
-  const iconoEl = document.getElementById("modalAvisoIcono");
-  const btnEntendido = document.getElementById("btnCerrarAvisoSimple");
-
-  if (!modal || !tituloEl || !mensajeEl || !iconoEl) return;
-
-  tituloEl.textContent = titulo;
-  mensajeEl.innerHTML = mensaje;
-  iconoEl.textContent = icono;
-
-  if (btnEntendido) {
-    btnEntendido.style.display = mostrarBotonEntendido ? "inline-block" : "none";
-  }
-
-  modal.style.display = "flex";
-}
-const mostrarAvisoSimple = window.mostrarAvisoSimple;
-
-function cerrarAvisoSimple() {
-  const modal = document.getElementById("modalAvisoSimple");
-  if (!modal) return;
-  modal.style.display = "none";
-}
-function verificarEventosPasados(events) {
-  if (modalConfirmacionAbierto) return;
-
-  const today = new Date().toISOString().split("T")[0];
-
-  for (const evento of events) {
-    const yaPaso = evento.date && evento.date < today;
-    const yaConfirmado = evento.realizacionConfirmada === true;
-    const yaRealizado = evento.status === "Realizado";
-    const yaCancelado = evento.status === "Cancelado";
-
-    if (yaPaso && !yaConfirmado && !yaRealizado && !yaCancelado) {
-      abrirModalConfirmarRealizacion(evento);
-      break;
-    }
-  }
-}
-
-function verificarAvisosPendientes(events) {
-  const today = new Date().toISOString().split("T")[0];
-  const en3dias = new Date();
-  en3dias.setDate(en3dias.getDate() + 3);
-  const limite = en3dias.toISOString().split("T")[0];
-
-  const manana = new Date();
-  manana.setDate(manana.getDate() + 1);
-  const fechaManana = manana.toISOString().split("T")[0];
-
-  // Staff incompleto en próximos 3 días
-  const staffCriticos = events.filter(e => {
-    if (e.date < today || e.date > limite) return false;
-    if (e.status === "Cancelado") return false;
-    const staffNecesario = Number(e.staffNecesario || 0);
-    if (staffNecesario === 0) return false;
-    const asignados = (e.mensajesEnviados || []).filter(
-      m => (m.estado || "pendiente") !== "rechazado"
-    ).length;
-    return asignados < staffNecesario;
-  });
-
-  // Checklist pendiente para mañana
-  const checklistCriticos = events.filter(e => {
-    if (e.date !== fechaManana) return false;
-    if (e.status === "Cancelado") return false;
-    const checklist = e.checklist || [];
-    return checklist.length === 0 || checklist.some(item => !item.preparado);
-  });
-
-  if (staffCriticos.length === 0 && checklistCriticos.length === 0) return;
-
-  let mensaje = "";
-
-  if (staffCriticos.length > 0) {
-    mensaje += `<strong>👥 Staff incompleto:</strong><br>`;
-    mensaje += staffCriticos.map(e => {
-      const asignados = (e.mensajesEnviados || []).filter(
-        m => (m.estado || "pendiente") !== "rechazado"
-      ).length;
-      const faltan = Number(e.staffNecesario) - asignados;
-      const fecha = new Date(e.date + "T00:00:00").toLocaleDateString("es-AR");
-      return `• ${fecha} · ${e.client} — faltan <strong>${faltan} mozo${faltan > 1 ? "s" : ""}</strong>`;
-    }).join("<br>");
-  }
-
-  if (checklistCriticos.length > 0) {
-    if (mensaje) mensaje += "<br><br>";
-    mensaje += `<strong>📦 Checklist pendiente para mañana:</strong><br>`;
-    mensaje += checklistCriticos.map(e => {
-      const checklist = e.checklist || [];
-      const fecha = new Date(e.date + "T00:00:00").toLocaleDateString("es-AR");
-      if (checklist.length === 0) {
-        return `• ${fecha} · ${e.client} — sin checklist armado`;
-      }
-      const pendientes = checklist.filter(item => !item.preparado).length;
-      return `• ${fecha} · ${e.client} — <strong>${pendientes} ítem${pendientes > 1 ? "s" : ""} sin preparar</strong>`;
-    }).join("<br>");
-  }
-
-  mostrarAvisoSimple("Recordatorios", mensaje, "🔔");
-}
-
-async function confirmarRealizacionEvento(statusFinal) {
-  if (!eventoPendienteConfirmacion) return;
-
-  try {
-    const ref = doc(db, "events", eventoPendienteConfirmacion.id);
-    const snap = await getDoc(ref);
-
-    if (!snap.exists()) {
-      mostrarAvisoSimple(
-        "El evento ya no existe.",
-        "⚠️"
-      );
-      cerrarModalConfirmarRealizacion();
-      return;
-    }
-
-    const dataActual = snap.data();
-
-    if (dataActual.realizacionConfirmada === true) {
-      cerrarModalConfirmarRealizacion();
-
-      mostrarAvisoSimple(
-        "Evento ya confirmado",
-        `Otro usuario ya confirmó este evento como <strong>${dataActual.status}</strong>.`,
-        "ℹ️"
-      );
-
-      return;
-    }
-
-    await updateDoc(ref, {
-      status: statusFinal,
-      realizacionConfirmada: true,
-    });
-
-    cerrarModalConfirmarRealizacion();
-  } catch (error) {
-    console.error("Error al confirmar realización del evento:", error);
   }
 }
 
@@ -685,21 +210,13 @@ async function eliminarEvento() {
     "¿Eliminar evento?",
     `¿Seguro que querés eliminar el evento de <strong>${nombreEvento}</strong>? Esta acción no se puede deshacer.<br><br>` +
     `<button onclick="window.confirmarEliminarEvento()" class="btn-aviso-confirmar">Sí, eliminar</button>
-    <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
-    "🗑",
-    false
+     <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
+    "🗑", false
   );
 }
 
-window.confirmarEliminarPresupuesto = async function () {
-  document.getElementById("modalAvisoSimple").style.display = "none";
-
-  await eliminarPresupuestoEvento(editingId, { db, storage, auth });
-};
-
 window.confirmarEliminarEvento = async function () {
   document.getElementById("modalAvisoSimple").style.display = "none";
-
   try {
     await deleteDoc(doc(db, "events", editingId));
     resetEventForm();
@@ -709,129 +226,263 @@ window.confirmarEliminarEvento = async function () {
   }
 };
 
+window.confirmarEliminarPresupuesto = async function () {
+  document.getElementById("modalAvisoSimple").style.display = "none";
+  await eliminarPresupuestoEvento(editingId, { db, storage, auth });
+};
+
+// ===============================
+// LOAD
+// ===============================
+function loadEvents(avisos) {
+  const q = query(collection(db, "events"));
+
+  onSnapshot(q, (snap) => {
+    window.allEventsData = [];
+    snap.forEach((d) => {
+      window.allEventsData.push({ ...d.data(), id: d.id });
+    });
+
+    window.allEventsData.sort((a, b) => {
+      const fechaA = a.esMultidia ? (a.jornadas?.[0]?.fecha || "") : (a.date || "");
+      const fechaB = b.esMultidia ? (b.jornadas?.[0]?.fecha || "") : (b.date || "");
+      return fechaA.localeCompare(fechaB);
+    });
+
+    avisos.verificarEventosPasados(window.allEventsData);
+
+    if (!avisos.isModalConfirmacionAbierto() && !window._avisosMostrados) {
+      window._avisosMostrados = true;
+      avisos.verificarAvisosPendientes(window.allEventsData);
+    }
+
+    rerenderEvents();
+  });
+}
+
+// ===============================
+// BÚSQUEDA
+// ===============================
+function initSearch() {
+  const searchInput = document.getElementById("searchInput");
+  if (!searchInput) return;
+
+  searchInput.addEventListener("input", (e) => {
+    const term = e.target.value.toLowerCase().trim();
+
+    if (!term) { rerenderEvents(); return; }
+
+    document.querySelectorAll(".event-card").forEach((card) => {
+      card.style.display = (card.dataset.cliente || "").includes(term) ? "" : "none";
+    });
+
+    document.querySelectorAll(".eventos-seccion-titulo, .eventos-mes-titulo").forEach((titulo) => {
+      let siguiente    = titulo.nextElementSibling;
+      let tieneVisibles = false;
+      while (siguiente &&
+        !siguiente.classList.contains("eventos-mes-titulo") &&
+        !siguiente.classList.contains("eventos-seccion-titulo")) {
+        if (siguiente.classList.contains("event-card") && siguiente.style.display !== "none") {
+          tieneVisibles = true; break;
+        }
+        siguiente = siguiente.nextElementSibling;
+      }
+      titulo.style.display = tieneVisibles ? "" : "none";
+    });
+
+    document.querySelectorAll(".eventos-seccion-titulo").forEach((seccion) => {
+      let siguiente    = seccion.nextElementSibling;
+      let tieneVisibles = false;
+      while (siguiente && !siguiente.classList.contains("eventos-seccion-titulo")) {
+        if (siguiente.classList.contains("eventos-mes-titulo") && siguiente.style.display !== "none") {
+          tieneVisibles = true; break;
+        }
+        siguiente = siguiente.nextElementSibling;
+      }
+      seccion.style.display = tieneVisibles ? "" : "none";
+    });
+  });
+}
+
+// ===============================
+// STATS
+// ===============================
+function updateClientDatalist(events) {
+  const datalist = document.getElementById("clientList");
+  if (!datalist) return;
+  const clients = [...new Set(events.map((e) => e.client))].sort();
+  datalist.innerHTML = clients.map((name) => `<option value="${name}">`).join("");
+}
+
+function updateStats(events) {
+  const monthFilter = document.getElementById("monthFilter")?.value;
+
+  let eventosFiltrados = window.allEventsData || [];
+  if (monthFilter) {
+    eventosFiltrados = eventosFiltrados.filter(e => e.date && e.date.startsWith(monthFilter));
+  }
+
+  window._aviosInstance?.actualizarGrafico(window.allEventsData || []);
+
+  eventosFiltrados = eventosFiltrados.filter(e => e.status !== "Cancelado" && e.status !== "Cerrado");
+
+  const totalMes  = eventosFiltrados.reduce((sum, e) => sum + Number(e.total   || 0), 0);
+  const senasMes  = eventosFiltrados.reduce((sum, e) => sum + Number(e.deposit || 0), 0);
+  const cobrado   = eventosFiltrados.filter(e => e.paid === true).reduce((sum, e) => sum + Number(e.total || 0), 0);
+  const porCobrar = totalMes - cobrado;
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+  set("totalMes",    `$${totalMes.toLocaleString()}`);
+  set("senasMes",    `$${senasMes.toLocaleString()}`);
+  set("saldoMes",    `$${(totalMes - senasMes).toLocaleString()}`);
+  set("eventosMes",  eventosFiltrados.length);
+  set("cobradoMes",  `$${cobrado.toLocaleString()}`);
+  set("porCobrarMes",`$${porCobrar.toLocaleString()}`);
+}
+
+// ===============================
+// AVISO MODAL
+// ===============================
+window.mostrarAvisoSimple = function (titulo, mensaje, icono = "⚠️", mostrarBotonEntendido = true) {
+  const modal      = document.getElementById("modalAvisoSimple");
+  const tituloEl   = document.getElementById("modalAvisoTitulo");
+  const mensajeEl  = document.getElementById("modalAvisoMensaje");
+  const iconoEl    = document.getElementById("modalAvisoIcono");
+  const btnEntendido = document.getElementById("btnCerrarAvisoSimple");
+
+  if (!modal || !tituloEl || !mensajeEl || !iconoEl) return;
+
+  tituloEl.textContent = titulo;
+  mensajeEl.innerHTML  = mensaje;
+  iconoEl.textContent  = icono;
+  if (btnEntendido) btnEntendido.style.display = mostrarBotonEntendido ? "inline-block" : "none";
+  modal.style.display = "flex";
+};
+const mostrarAvisoSimple = window.mostrarAvisoSimple;
+
+function cerrarAvisoSimple() {
+  const modal = document.getElementById("modalAvisoSimple");
+  if (modal) modal.style.display = "none";
+}
+
+window.resetFormConfirmado = function () {
+  document.getElementById("modalAvisoSimple").style.display = "none";
+  resetEventForm();
+};
+
 // ===============================
 // INIT
 // ===============================
 export function initEvents() {
+
+  // Inicializar módulos
+  initJornadas({ mostrarAvisoSimple });
+  initMaps({ mostrarAvisoSimple });
+
+  const avisos = initAvisos({
+    mostrarAvisoSimple,
+    onConfirmarRealizacion: async (evento, statusFinal) => {
+      try {
+        const ref  = doc(db, "events", evento.id);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return;
+
+        const dataActual = snap.data();
+        if (dataActual.realizacionConfirmada === true) {
+          mostrarAvisoSimple(
+            "Evento ya confirmado",
+            `Otro usuario ya confirmó este evento como <strong>${dataActual.status}</strong>.`,
+            "ℹ️"
+          );
+          return;
+        }
+        await updateDoc(ref, { status: statusFinal, realizacionConfirmada: true });
+      } catch (error) {
+        console.error("Error al confirmar realización:", error);
+      }
+    },
+  });
+  window._aviosInstance = avisos;
+
+  // Botones del formulario
+  document.getElementById("addBtn")?.addEventListener("click", saveEvent);
+  document.getElementById("updateBtn")?.addEventListener("click", updateExistingEvent);
   document.getElementById("deleteBtn")?.addEventListener("click", eliminarEvento);
+  document.getElementById("btnUbicar")?.addEventListener("click", window.abrirModalMaps);
+  document.getElementById("btnCerrarAvisoSimple")?.addEventListener("click", cerrarAvisoSimple);
+
   document.getElementById("cancelFormBtn")?.addEventListener("click", () => {
     const client = document.getElementById("client")?.value;
-    const date = document.getElementById("date")?.value;
-
+    const date   = document.getElementById("date")?.value;
     if (client || date) {
       mostrarAvisoSimple(
         "¿Cancelar?",
         "Tenés datos cargados. ¿Seguro que querés cancelar?<br><br>" +
         `<button onclick="window.resetFormConfirmado()" class="btn-aviso-confirmar">Sí, cancelar</button>
-        <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Volver</button>`,
-        "⚠️",
-        false
+         <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Volver</button>`,
+        "⚠️", false
       );
     } else {
       resetEventForm();
     }
   });
-  document.getElementById("addBtn")?.addEventListener("click", saveEvent);
-  document.getElementById("updateBtn")?.addEventListener("click", updateExistingEvent);
-  document.getElementById("btnUbicar")?.addEventListener("click", window.abrirModalMaps);
+
   document.getElementById("showFormBtn")?.addEventListener("click", () => {
     resetEventForm();
-
     const form = document.getElementById("eventFormContainer");
-    if (form) {
-      form.style.display = "block";
-      form.scrollIntoView({ behavior: "smooth" });
-    }
+    if (form) { form.style.display = "block"; form.scrollIntoView({ behavior: "smooth" }); }
   });
 
   document.getElementById("btnGestionarStaff")?.addEventListener("click", () => {
-    if (editingId) {
-      window.abrirModalGestionStaff(editingId);
-    } else {
-      mostrarAvisoSimple("Para gestionar el staff, primero guarda el evento o selecciónalo desde la lista.", "⚠️");
-    }
+    editingId
+      ? window.abrirModalGestionStaff(editingId)
+      : mostrarAvisoSimple("Para gestionar el staff, primero guarda el evento.", "⚠️");
   });
 
+  document.getElementById("btnGestionarChecklist")?.addEventListener("click", () => {
+    editingId
+      ? window.abrirModalChecklist(editingId)
+      : mostrarAvisoSimple("Para gestionar la checklist, primero guarda el evento.", "⚠️");
+  });
 
-
-  const btnCerrarAvisoSimple = document.getElementById("btnCerrarAvisoSimple");
-
-  if (btnCerrarAvisoSimple) {
-    btnCerrarAvisoSimple.addEventListener("click", cerrarAvisoSimple);
-  }
-
+  // Cálculo automático de mozos
   const guestsInput = document.getElementById("guests");
-  const staffInput = document.getElementById("staffNecesario");
-
+  const staffInput  = document.getElementById("staffNecesario");
   let staffEditadoManualmente = false;
 
   if (guestsInput && staffInput) {
     guestsInput.addEventListener("input", function () {
       const invitados = Number(this.value) || 0;
-
       if (!staffEditadoManualmente) {
         staffInput.value = invitados > 0 ? Math.ceil(invitados / 15) : "";
       }
     });
-
     staffInput.addEventListener("input", function () {
-      if (this.value) {
-        staffEditadoManualmente = true;
-      } else {
-        staffEditadoManualmente = false;
-        const invitados = Number(guestsInput.value) || 0;
+      staffEditadoManualmente = !!this.value;
+      if (!staffEditadoManualmente) {
+        const invitados  = Number(guestsInput.value) || 0;
         staffInput.value = invitados > 0 ? Math.ceil(invitados / 15) : "";
       }
     });
   }
-  document.getElementById("btnGestionarChecklist")?.addEventListener("click", () => {
-    if (editingId) {
-      window.abrirModalChecklist(editingId);
-    } else {
-      mostrarAvisoSimple("Para gestionar la checklist, primero guarda el evento o selecciónalo desde la lista.", "⚠️");
-    }
-  });
 
-  const btnEventoRealizado = document.getElementById("btnEventoRealizado");
-  const btnEventoCancelado = document.getElementById("btnEventoCancelado");
-  const btnCerrarConfirmacionEvento = document.getElementById("btnCerrarConfirmacionEvento");
-
-  if (btnEventoRealizado) {
-    btnEventoRealizado.addEventListener("click", async () => {
-      await confirmarRealizacionEvento("Realizado");
-    });
-  }
-
-  if (btnEventoCancelado) {
-    btnEventoCancelado.addEventListener("click", async () => {
-      await confirmarRealizacionEvento("Cancelado");
-    });
-  }
-
-  if (btnCerrarConfirmacionEvento) {
-    btnCerrarConfirmacionEvento.addEventListener("click", () => {
-      cerrarModalConfirmarRealizacion();
-    });
-  }
-
+  // Filtros
   document.addEventListener("change", (e) => {
-    if (e.target.id === "monthFilter") {
-      updateStats(window.allEventsData || []);
-    }
+    if (e.target.id === "monthFilter") updateStats(window.allEventsData || []);
   });
 
   document.getElementById("filtrosEventos")?.addEventListener("click", (e) => {
     const btn = e.target.closest(".filtro-estado");
     if (!btn) return;
-
-    document.querySelectorAll(".filtro-estado").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".filtro-estado").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     rerenderEvents();
   });
 
-  const presupuestoFile = document.getElementById("presupuestoFile");
-  const btnSubirPresupuesto = document.getElementById("btnSubirPresupuesto");
-  const btnVerPresupuesto = document.getElementById("btnVerPresupuesto");
+  // Presupuesto
+  const presupuestoFile      = document.getElementById("presupuestoFile");
+  const btnSubirPresupuesto  = document.getElementById("btnSubirPresupuesto");
+  const btnVerPresupuesto    = document.getElementById("btnVerPresupuesto");
   const btnEliminarPresupuesto = document.getElementById("btnEliminarPresupuesto");
 
   if (btnSubirPresupuesto && presupuestoFile) {
@@ -840,12 +491,8 @@ export function initEvents() {
         mostrarAvisoSimple("Evento no guardado", "Primero guardá el evento para poder adjuntar el presupuesto.", "⚠️");
         return;
       }
-      const evento = window.allEventsData.find(ev => ev.id === editingId);
-      const eventoPasado = evento?.date < new Date().toISOString().split("T")[0];
-      if (eventoPasado) return;
       presupuestoFile.click();
     });
-
     presupuestoFile.addEventListener("change", async () => {
       await subirPresupuestoEvento(editingId, { storage, db, auth });
       presupuestoFile.value = "";
@@ -854,32 +501,28 @@ export function initEvents() {
 
   if (btnVerPresupuesto) {
     btnVerPresupuesto.onclick = () => {
-      const eventoActual = window.allEventsData.find((ev) => ev.id === editingId);
-      if (eventoActual?.presupuestoURL) {
-        window.open(eventoActual.presupuestoURL, "_blank");
-      }
+      const ev = window.allEventsData.find(ev => ev.id === editingId);
+      if (ev?.presupuestoURL) window.open(ev.presupuestoURL, "_blank");
     };
   }
 
   if (btnEliminarPresupuesto) {
     btnEliminarPresupuesto.addEventListener("click", () => {
-      const eventoActual = window.allEventsData.find((ev) => ev.id === editingId);
-      const nombreArchivo = eventoActual?.presupuestoNombre || "este archivo";
-
+      const ev            = window.allEventsData.find(ev => ev.id === editingId);
+      const nombreArchivo = ev?.presupuestoNombre || "este archivo";
       mostrarAvisoSimple(
         "¿Eliminar presupuesto?",
         `¿Seguro que querés eliminar <strong>${nombreArchivo}</strong>?<br><br>` +
         `<button onclick="window.confirmarEliminarPresupuesto()" class="btn-aviso-confirmar">Sí, eliminar</button>
-        <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
-        "🗑️",
-        false
+         <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
+        "🗑️", false
       );
     });
   }
 
-  const facturaFile = document.getElementById("facturaFile");
-  const btnSubirFactura = document.getElementById("btnSubirFactura");
-  const btnVerFactura = document.getElementById("btnVerFactura");
+  // Factura
+  const facturaFile        = document.getElementById("facturaFile");
+  const btnSubirFactura    = document.getElementById("btnSubirFactura");
   const btnEliminarFactura = document.getElementById("btnEliminarFactura");
 
   if (btnSubirFactura && facturaFile) {
@@ -890,7 +533,6 @@ export function initEvents() {
       }
       facturaFile.click();
     });
-
     facturaFile.addEventListener("change", async () => {
       await subirFacturaEvento(editingId, { storage, db, auth });
       facturaFile.value = "";
@@ -899,311 +541,51 @@ export function initEvents() {
 
   if (btnEliminarFactura) {
     btnEliminarFactura.addEventListener("click", () => {
-      const eventoActual = window.allEventsData.find(ev => ev.id === editingId);
-      const nombreArchivo = eventoActual?.facturaNombre || "esta factura";
+      const ev            = window.allEventsData.find(ev => ev.id === editingId);
+      const nombreArchivo = ev?.facturaNombre || "esta factura";
       mostrarAvisoSimple(
         "¿Eliminar factura?",
         `¿Seguro que querés eliminar <strong>${nombreArchivo}</strong>?<br><br>` +
         `<button onclick="window.confirmarEliminarFactura()" class="btn-aviso-confirmar">Sí, eliminar</button>
-       <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
-        "🗑️",
-        false
+         <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
+        "🗑️", false
       );
     });
   }
 
-  window.toggleMultidia = function () {
-    const checked = document.getElementById("esMultidia")?.checked;
-    const seccionUnDia = document.getElementById("seccionUnDia");
-    const jornadasCont = document.getElementById("jornadasContainer");
-
-    if (seccionUnDia) seccionUnDia.style.display = checked ? "none" : "block";
-    if (jornadasCont) jornadasCont.style.display = checked ? "block" : "none";
-
-    if (checked) {
-      // Limpiar jornadas anteriores y crear una nueva con la fecha del evento
-      window._jornadasActuales = [];
-      window.agregarJornada();
-    } else {
-      // Al desactivar, limpiar jornadas
-      window._jornadasActuales = [];
-      document.getElementById("jornadasLista").innerHTML = "";
-    }
+  window.confirmarEliminarFactura = async function () {
+    document.getElementById("modalAvisoSimple").style.display = "none";
+    await eliminarFacturaEvento(editingId, { db, storage, auth });
   };
 
-  window.agregarJornada = function () {
-    if (!window._jornadasActuales) window._jornadasActuales = [];
-
-    const anterior = window._jornadasActuales.length > 0
-      ? window._jornadasActuales[window._jornadasActuales.length - 1]
-      : null;
-
-    const nueva = anterior ? {
-      fecha: anterior.fecha || "",
-      tipo: anterior.tipo || "Catering Completo",
-      lugar: anterior.lugar || "",
-      invitados: anterior.invitados || "",
-      staffNecesario: anterior.staffNecesario || "",
-      horaInicio: anterior.horaInicio || "",
-      horaFin: anterior.horaFin || "",
-      horaPresentacion: anterior.horaPresentacion || "",
-      alquileres: { ...anterior.alquileres } || {},
-      notas: anterior.notas || "",
-      mensajesEnviados: [],
-      checklist: [],
-    } : {
-      fecha: document.getElementById("date")?.value || "",
-      tipo: "Catering Completo",
-      lugar: "",
-      invitados: "",
-      staffNecesario: "",
-      horaInicio: "",
-      horaFin: "",
-      horaPresentacion: "",
-      alquileres: {},
-      notas: "",
-      mensajesEnviados: [],
-      checklist: [],
-    };
-
-    window._jornadasActuales.push(nueva);
-    window.renderJornadas();
-  };
-
-  window.actualizarAlquilerJornada = function (index, campo, valor) {
-    if (!window._jornadasActuales?.[index]) return;
-    if (!window._jornadasActuales[index].alquileres) {
-      window._jornadasActuales[index].alquileres = {};
-    }
-    window._jornadasActuales[index].alquileres[campo] = valor;
-  };
-
-  window.eliminarJornada = function (index) {
-    window._jornadasActuales.splice(index, 1);
-
-    if (window._jornadasActuales.length === 0) {
-      const esMultidia = document.getElementById("esMultidia");
-      const seccionUnDia = document.getElementById("seccionUnDia");
-      const jornadasCont = document.getElementById("jornadasContainer");
-
-      if (esMultidia) esMultidia.checked = false;
-      if (seccionUnDia) seccionUnDia.style.display = "block";
-      if (jornadasCont) jornadasCont.style.display = "none";
-    }
-
-    window.renderJornadas();
-  };
-
-  window.actualizarJornada = function (index, campo, valor) {
-    if (!window._jornadasActuales?.[index]) return;
-
-    if (campo === "fecha") {
-      const fechaEvento = document.getElementById("date")?.value;
-
-      if (fechaEvento && valor < fechaEvento) {
-        mostrarAvisoSimple(
-          "Fecha inválida",
-          "La fecha de la jornada no puede ser anterior a la fecha del evento.",
-          "⚠️"
-        );
-        // Resetear el input
-        window.renderJornadas();
-        return;
-      }
-
-      // Verificar que no sea anterior a la jornada previa
-      if (index > 0) {
-        const fechaAnterior = window._jornadasActuales[index - 1].fecha;
-        if (fechaAnterior && valor < fechaAnterior) {
-          mostrarAvisoSimple(
-            "Fecha inválida",
-            `La fecha de la jornada ${index + 1} no puede ser anterior a la jornada ${index}.`,
-            "⚠️"
-          );
-          window.renderJornadas();
-          return;
-        }
-      }
-    }
-
-    window._jornadasActuales[index][campo] = valor;
-  };
-
-  window.renderJornadas = function () {
-    const lista = document.getElementById("jornadasLista");
-    if (!lista) return;
-
-    if (window._jornadasActuales.length === 0) {
-      lista.innerHTML = "<p class='jornada-vacia'>No hay jornadas cargadas.</p>";
-      return;
-    }
-
-    lista.innerHTML = window._jornadasActuales.map((j, i) => `
-    <div class="jornada-card">
-      <div class="jornada-card-header">
-        <span class="jornada-numero">
-          Jornada ${i + 1}
-          ${j.fecha ? ` · ${new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR")}` : ""}
-          ${j.tipo ? ` · ${j.tipo}` : ""}
-          ${j.horaInicio ? ` · ${j.horaInicio}` : ""}
-        </span>
-        <button type="button" onclick="window.eliminarJornada(${i})" class="btn-catalogo-eliminar">🗑</button>
-      </div>
-      <div class="jornada-grid">
-  <div class="form-group">
-    <label>Fecha</label>
-    <input type="date" value="${j.fecha}" onchange="window.actualizarJornada(${i}, 'fecha', this.value)">
-  </div>
-  <div class="form-group">
-    <label>Hora inicio</label>
-    <input type="time" value="${j.horaInicio || ""}" onchange="window.actualizarJornada(${i}, 'horaInicio', this.value)">
-  </div>
-  <div class="form-group">
-    <label>Hora fin</label>
-    <input type="time" value="${j.horaFin || ""}" onchange="window.actualizarJornada(${i}, 'horaFin', this.value)">
-  </div>
-  <div class="form-group">
-    <label>Presentación</label>
-    <input type="time" value="${j.horaPresentacion || ""}" onchange="window.actualizarJornada(${i}, 'horaPresentacion', this.value)">
-  </div>
-</div>
-
-<div class="jornada-row-tipo">
-  <div class="form-group jornada-tipo">
-    <label>Tipo</label>
-    <select onchange="window.actualizarJornada(${i}, 'tipo', this.value)">
-      ${["Catering Completo", "Coffee", "Almuerzo/Cena informal", "Almuerzo/Cena formal", "Asado", "Cumpleaños", "Cumpleaños de 15"]
-        .map(t => `<option ${j.tipo === t ? "selected" : ""}>${t}</option>`).join("")}
-    </select>
-  </div>
-  <div class="form-group jornada-invitados">
-    <label>Invitados</label>
-    <input type="number" value="${j.invitados || ""}" onchange="window.actualizarJornada(${i}, 'invitados', this.value)">
-  </div>
-</div>
-
-<div class="jornada-row-lugar">
-  <div class="form-group jornada-mozos">
-    <label>Mozos</label>
-    <input type="number" value="${j.staffNecesario || ""}" onchange="window.actualizarJornada(${i}, 'staffNecesario', this.value)">
-  </div>
-  <div class="form-group jornada-lugar">
-    <label>Lugar</label>
-    <div class="place-input-wrap">
-      <input type="text" id="jornadaLugar_${i}" value="${j.lugar || ""}" 
-        onchange="window.actualizarJornada(${i}, 'lugar', this.value)">
-      <button type="button" onclick="window.abrirModalMapsJornada(${i})" class="btn-ubicar">📍</button>
-    </div>
-  </div>
-</div>
-
-      <div class="form-group form-alquileres">
-        <label>Alquileres</label>
-        <div class="alquileres-grid">
-          <label class="alquiler-label">
-            <input type="checkbox" ${j.alquileres?.vajilla ? "checked" : ""}
-              onchange="window.actualizarAlquilerJornada(${i}, 'vajilla', this.checked)"> Vajilla
-          </label>
-          <label class="alquiler-label">
-            <input type="checkbox" ${j.alquileres?.manteleria ? "checked" : ""}
-              onchange="window.actualizarAlquilerJornada(${i}, 'manteleria', this.checked)"> Mantelería
-          </label>
-          <label class="alquiler-label">
-            <input type="checkbox" ${j.alquileres?.mobiliario ? "checked" : ""}
-              onchange="window.actualizarAlquilerJornada(${i}, 'mobiliario', this.checked)"> Mobiliario
-          </label>
-          <label class="alquiler-label">
-            <input type="checkbox" ${j.alquileres?.mobiliarioTrabajo ? "checked" : ""}
-              onchange="window.actualizarAlquilerJornada(${i}, 'mobiliarioTrabajo', this.checked)"> Mob. trabajo
-          </label>
-        </div>
-        <input type="text" value="${j.alquileres?.notas || ""}" placeholder="Notas de alquiler..."
-          class="alq-notas" onchange="window.actualizarAlquilerJornada(${i}, 'notas', this.value)">
-      </div>
-
-      <div class="form-group">
-        <label>Notas</label>
-        <textarea onchange="window.actualizarJornada(${i}, 'notas', this.value)">${j.notas || ""}</textarea>
-      </div>
-
-      <div class="jornada-acciones">
-        <button type="button" onclick="window.abrirStaffJornada(${i})" class="btn-jornada-staff">
-          👥 Staff
-          ${j.mensajesEnviados?.length > 0 ? `<span class="jornada-staff-badge">${j.mensajesEnviados.length}</span>` : ""}
-        </button>
-        <button type="button" onclick="window.abrirChecklistJornada(${i})" class="btn-jornada-checklist">
-          📦 Checklist
-          ${j.checklist?.length > 0 ? `<span class="jornada-staff-badge">${j.checklist.filter(c => c.preparado).length}/${j.checklist.length}</span>` : ""}
-        </button>
-      </div>
-    </div>
-  `).join("");
-  };
-
-  window.abrirModalMapsJornada = function (jornadaIndex) {
-    window._jornadaMapsActual = jornadaIndex;
-    window.abrirModalMaps();
-
-    // Sobreescribir confirmarUbicacion para que guarde en la jornada
-    const confirmarOriginal = window.confirmarUbicacion;
-    window.confirmarUbicacion = function () {
-      const place = window._selectedPlace;
-      if (!place) {
-        mostrarAvisoSimple("Sin selección", "Buscá y seleccioná un lugar primero.", "⚠️");
-        return;
-      }
-
-      const input = document.getElementById(`jornadaLugar_${jornadaIndex}`);
-      if (input) input.value = place.nombre || place.direccion;
-
-      window.actualizarJornada(jornadaIndex, "lugar", place.nombre || place.direccion);
-      window.actualizarJornada(jornadaIndex, "placeUrl", place.url || "");
-
-      window.cerrarModalMaps();
-
-      // Restaurar confirmarUbicacion original
-      window.confirmarUbicacion = confirmarOriginal;
-    };
-  };
-
+  // Staff/Checklist de jornadas
   window.abrirStaffJornada = function (jornadaIndex) {
     if (!window.editingId) {
       mostrarAvisoSimple("Guardá primero", "Guardá el evento antes de gestionar el staff de cada jornada.", "⚠️");
       return;
     }
-
     const evento = window.allEventsData.find(e => e.id === window.editingId);
     if (!evento) return;
 
-    // Sincronizamos jornadas del formulario al evento en memoria
     evento.jornadas = window._jornadasActuales ? [...window._jornadasActuales] : [];
-
-    const jornada = evento.jornadas[jornadaIndex];
+    const jornada   = evento.jornadas[jornadaIndex];
     if (!jornada) return;
-
     if (!jornada.mensajesEnviados) jornada.mensajesEnviados = [];
 
-    // Guardamos referencia de qué jornada estamos editando
-    window._jornadaStaffActual = { eventoId: window.editingId, jornadaIndex };
-
-    // Reutilizamos el modal de staff del evento pero apuntando a la jornada
-    const modal = document.getElementById("modalGestionStaff");
+    const modal  = document.getElementById("modalGestionStaff");
     const titulo = document.getElementById("tituloModalStaff");
     const resumen = document.getElementById("resumenStaffEvento");
-
     if (!modal || !titulo) return;
 
     const fecha = jornada.fecha
       ? new Date(jornada.fecha + "T00:00:00").toLocaleDateString("es-AR")
       : `Jornada ${jornadaIndex + 1}`;
 
-    titulo.innerText = `👥 Staff · ${fecha}`;
+    titulo.innerText           = `👥 Staff · ${fecha}`;
     if (resumen) resumen.innerHTML = "";
-
-    modal.dataset.eventId = window.editingId;
-    modal.dataset.jornadaIdx = jornadaIndex;
-
-    window._modoStaffJornada = true;
+    modal.dataset.eventId      = window.editingId;
+    modal.dataset.jornadaIdx   = jornadaIndex;
+    window._modoStaffJornada   = true;
     window.abrirModalGestionStaff(window.editingId);
   };
 
@@ -1212,60 +594,42 @@ export function initEvents() {
       mostrarAvisoSimple("Guardá primero", "Guardá el evento antes de gestionar el checklist de cada jornada.", "⚠️");
       return;
     }
-
     const evento = window.allEventsData.find(e => e.id === window.editingId);
     if (!evento) return;
 
-    // Sincronizar jornadas del formulario al evento
     evento.jornadas = window._jornadasActuales ? [...window._jornadasActuales] : [];
-
-    const jornada = evento.jornadas[jornadaIndex];
+    const jornada   = evento.jornadas[jornadaIndex];
     if (!jornada) return;
-
     if (!jornada.checklist) jornada.checklist = [];
 
-    // Guardamos referencia de qué jornada estamos editando
-    window._jornadaChecklistActual = { eventoId: window.editingId, jornadaIndex };
-
-    // Reutilizamos el modal de checklist apuntando a la jornada
     const fecha = jornada.fecha
       ? new Date(jornada.fecha + "T00:00:00").toLocaleDateString("es-AR")
       : `Jornada ${jornadaIndex + 1}`;
 
-    // Creamos un objeto "evento virtual" para la jornada
-    const eventoJornada = {
+    window.eventoChecklistActual = {
       ...jornada,
-      id: window.editingId,
-      client: evento.client,
-      date: jornada.fecha || evento.date,
-      _esJornada: true,
+      id:            window.editingId,
+      client:        evento.client,
+      date:          jornada.fecha || evento.date,
+      _esJornada:    true,
       _jornadaIndex: jornadaIndex,
-      _eventoReal: evento,
+      _eventoReal:   evento,
     };
-
-    window.eventoChecklistActual = eventoJornada;
 
     const titulo = document.getElementById("tituloModalChecklist");
     if (titulo) titulo.innerText = `📦 ${fecha} · ${evento.client}`;
 
     const modal = document.getElementById("modalChecklist");
-    if (modal) {
-      window.cambiarPestanaChecklist("checklist");
-      modal.style.display = "flex";
-    }
-  };
-
-  window.confirmarEliminarFactura = async function () {
-    document.getElementById("modalAvisoSimple").style.display = "none";
-    await eliminarFacturaEvento(editingId, { db, storage, auth });
+    if (modal) { window.cambiarPestanaChecklist("checklist"); modal.style.display = "flex"; }
   };
 
   registerEventDetailModal({
-    getAllEvents: () => window.allEventsData || [],
+    getAllEvents:            () => window.allEventsData || [],
     setEditingId,
     renderStaffSelection,
     puedeEditarPresupuesto: () => puedeEditarPresupuesto(auth),
   });
-  loadEvents();
+
+  loadEvents(avisos);
   initSearch();
 }
