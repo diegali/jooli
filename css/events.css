@@ -62,7 +62,9 @@
   cursor: pointer;
 }
 
-.filtro-check--cerrados  { accent-color: #c9a227; }
+.filtro-check--cerrados {
+  accent-color: #c9a227;
+}
 
 .filtros-estado-wrap {
   margin-top: 4px;
@@ -178,11 +180,30 @@
   white-space: nowrap;
 }
 
-.status-badge--Presupuestado  { background: var(--status-presupuestado-bg); color: var(--status-presupuestado-text); }
-.status-badge--Seña-pagada    { background: var(--status-sena-bg);          color: var(--status-sena-text); }
-.status-badge--Confirmado     { background: var(--status-confirmado-bg);    color: var(--status-confirmado-text); }
-.status-badge--Realizado      { background: var(--status-realizado-bg);     color: var(--status-realizado-text); }
-.status-badge--Cancelado      { background: var(--status-cancelado-bg);     color: var(--status-cancelado-text); }
+.status-badge--Presupuestado {
+  background: var(--status-presupuestado-bg);
+  color: var(--status-presupuestado-text);
+}
+
+.status-badge--Seña-pagada {
+  background: var(--status-sena-bg);
+  color: var(--status-sena-text);
+}
+
+.status-badge--Confirmado {
+  background: var(--status-confirmado-bg);
+  color: var(--status-confirmado-text);
+}
+
+.status-badge--Realizado {
+  background: var(--status-realizado-bg);
+  color: var(--status-realizado-text);
+}
+
+.status-badge--Cancelado {
+  background: var(--status-cancelado-bg);
+  color: var(--status-cancelado-text);
+}
 
 /* Badge de factura */
 .invoice-badge {
@@ -232,13 +253,43 @@
 }
 
 /* Bordes de card por estado (lista legacy) */
-.card { background: var(--bg-card); color: #111; padding: 15px; margin-bottom: 12px; border-radius: var(--radius-lg); border: 1px solid var(--border); border-left: 8px solid #ccc; box-shadow: var(--shadow-md); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
-.card:hover { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-.card[data-status="Presupuestado"] { border-left-color: var(--status-presupuestado-bg); }
-.card[data-status="Seña pagada"]   { border-left-color: var(--status-sena-bg); }
-.card[data-status="Confirmado"]    { border-left-color: var(--status-confirmado-bg); }
-.card[data-status="Realizado"]     { border-left-color: var(--status-realizado-bg); }
-.card[data-status="Cancelado"]     { border-left-color: var(--status-cancelado-bg); }
+.card {
+  background: var(--bg-card);
+  color: #111;
+  padding: 15px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  border-left: 8px solid #ccc;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card[data-status="Presupuestado"] {
+  border-left-color: var(--status-presupuestado-bg);
+}
+
+.card[data-status="Seña pagada"] {
+  border-left-color: var(--status-sena-bg);
+}
+
+.card[data-status="Confirmado"] {
+  border-left-color: var(--status-confirmado-bg);
+}
+
+.card[data-status="Realizado"] {
+  border-left-color: var(--status-realizado-bg);
+}
+
+.card[data-status="Cancelado"] {
+  border-left-color: var(--status-cancelado-bg);
+}
 
 /* ---- Agregar evento ---- */
 .add-event-container {
@@ -269,11 +320,31 @@
 }
 
 @media (max-width: 600px) {
-  .fc-event-title { font-size: 0.75rem !important; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .fc-daygrid-event { margin-top: 1px !important; padding: 1px !important; }
-  .fc .fc-toolbar-title { font-size: 1rem !important; }
-  .fc .fc-button { font-size: 0.8rem !important; padding: 4px 8px !important; }
-  .fc-daygrid-day-frame { min-height: 60px !important; }
+  .fc-event-title {
+    font-size: 0.75rem !important;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .fc-daygrid-event {
+    margin-top: 1px !important;
+    padding: 1px !important;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1rem !important;
+  }
+
+  .fc .fc-button {
+    font-size: 0.8rem !important;
+    padding: 4px 8px !important;
+  }
+
+  .fc-daygrid-day-frame {
+    min-height: 60px !important;
+  }
 }
 
 /* ---- Estadísticas ---- */
@@ -326,7 +397,9 @@
   text-align: center;
 }
 
-.stat-card--dark { background: var(--bg-dark); }
+.stat-card--dark {
+  background: var(--bg-dark);
+}
 
 .stat-label {
   font-size: var(--font-size-xs);
@@ -337,7 +410,9 @@
   margin-bottom: 4px;
 }
 
-.stat-card--dark .stat-label { color: var(--gold); }
+.stat-card--dark .stat-label {
+  color: var(--gold);
+}
 
 .stat-value {
   font-size: 17px;
@@ -345,9 +420,17 @@
   color: #222;
 }
 
-.stat-value--gold   { color: var(--gold); }
-.stat-value--green  { color: var(--color-success); }
-.stat-value--orange { color: var(--status-sena-bg); }
+.stat-value--gold {
+  color: var(--gold);
+}
+
+.stat-value--green {
+  color: var(--color-success);
+}
+
+.stat-value--orange {
+  color: var(--status-sena-bg);
+}
 
 .stats-divider {
   height: 1px;
@@ -356,8 +439,13 @@
 }
 
 @media (max-width: 400px) {
-  #totalMes, #senasMes, #saldoMes,
-  #eventosMes, #cobradoMes, #porCobrarMes {
+
+  #totalMes,
+  #senasMes,
+  #saldoMes,
+  #eventosMes,
+  #cobradoMes,
+  #porCobrarMes {
     font-size: 13px !important;
   }
 }
@@ -389,7 +477,9 @@
   font-size: var(--font-size-base);
 }
 
-.form-alquileres { margin-top: 10px; }
+.form-alquileres {
+  margin-top: 10px;
+}
 
 .alquileres-grid {
   display: grid;
@@ -418,10 +508,17 @@
   padding: 0;
 }
 
-.alq-notas { margin-top: 8px; }
+.alq-notas {
+  margin-top: 8px;
+}
 
-.form-presupuesto { margin-top: 15px; }
-.presupuesto-file-input { display: none; }
+.form-presupuesto {
+  margin-top: 15px;
+}
+
+.presupuesto-file-input {
+  display: none;
+}
 
 .presupuesto-info {
   font-size: 13px;
@@ -448,9 +545,19 @@
   color: white;
 }
 
-.btn-presupuesto--subir    { background: var(--color-dark-btn); }
-.btn-presupuesto--ver      { display: none; background: var(--color-info); }
-.btn-presupuesto--eliminar { display: none; background: var(--color-danger); }
+.btn-presupuesto--subir {
+  background: var(--color-dark-btn);
+}
+
+.btn-presupuesto--ver {
+  display: none;
+  background: var(--color-info);
+}
+
+.btn-presupuesto--eliminar {
+  display: none;
+  background: var(--color-danger);
+}
 
 .form-staff-buttons {
   display: flex;
@@ -495,8 +602,15 @@
   color: white;
 }
 
-.form-submit-btn--delete { background: var(--color-danger);color: white; }
-.form-submit-btn--cancel { background: #666; color: white; }
+.form-submit-btn--delete {
+  background: var(--color-danger);
+  color: white;
+}
+
+.form-submit-btn--cancel {
+  background: #666;
+  color: white;
+}
 
 /* ---- Lugar + Maps ---- */
 .place-input-wrap {
@@ -505,7 +619,9 @@
   align-items: center;
 }
 
-.place-input-wrap input { flex: 1; }
+.place-input-wrap input {
+  flex: 1;
+}
 
 .btn-ubicar {
   padding: 8px 10px;
@@ -523,17 +639,22 @@
 }
 
 /* Clases utilitarias faltantes */
-.maps-search-container { margin-bottom: 12px; }
-.stats-grid--top { margin-bottom: 10px; }
+.maps-search-container {
+  margin-bottom: 12px;
+}
+
+.stats-grid--top {
+  margin-bottom: 10px;
+}
 
 .badge-pagado {
-    background: var(--color-success);
-    color: white;
-    padding: 2px 8px;
-    border-radius: var(--radius-sm);
-    font-size: 0.7em;
-    font-weight: 700;
-    margin-left: 6px;
+  background: var(--color-success);
+  color: white;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.7em;
+  font-weight: 700;
+  margin-left: 6px;
 }
 
 .event-card__badges {
@@ -549,7 +670,7 @@
 }
 
 .btn-detalle--duplicar {
-    background: #2c3e50;
+  background: #2c3e50;
 }
 
 .stats-chart-wrap {
@@ -732,10 +853,11 @@
 }
 
 .detail-jornada-item {
-  background: #f4f1eb;
+  background: #f0ece3;
   border-radius: 8px;
   padding: 10px 12px;
   margin-bottom: 8px;
+  border-left: 3px solid #d4af37;
 }
 
 .detail-jornada-fecha {
@@ -794,10 +916,18 @@
   color: white;
 }
 
-.btn-adjunto--ver      { background: #2980b9; }
-.btn-adjunto--eliminar { background: #c0392b; }
+.btn-adjunto--ver {
+  background: #2980b9;
+}
 
-.btn-adjunto:hover { opacity: 0.85; color: white; }
+.btn-adjunto--eliminar {
+  background: #c0392b;
+}
+
+.btn-adjunto:hover {
+  opacity: 0.85;
+  color: white;
+}
 
 .fecha-multidia-row {
   display: flex;
@@ -817,7 +947,18 @@
   margin-bottom: 8px;
 }
 
-.jornada-tipo      { flex: 3; }
-.jornada-invitados { flex: 1; }
-.jornada-mozos     { flex: 1; }
-.jornada-lugar     { flex: 3; }
+.jornada-tipo {
+  flex: 3;
+}
+
+.jornada-invitados {
+  flex: 1;
+}
+
+.jornada-mozos {
+  flex: 1;
+}
+
+.jornada-lugar {
+  flex: 3;
+}

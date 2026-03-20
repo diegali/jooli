@@ -153,6 +153,21 @@ export function registerEventDetailModal(deps) {
         const evento = getAllEvents().find((ev) => ev.id === eventoId);
         if (!evento) return;
 
+        // Advertir si hay edición en curso
+        if (window.editingId) {
+            const client = document.getElementById("client")?.value;
+            if (client) {
+                window.mostrarAvisoSimple(
+                    "¿Salir sin guardar?",
+                    `Estás editando el evento de <strong>${client}</strong>. Si salís perderás los cambios.<br><br>` +
+                    `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'; window.resetFormConfirmado(); window.abrirModalDetalle('${eventoId}')" class="btn-aviso-confirmar">Salir sin guardar</button>
+         <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Volver a editar</button>`,
+                    "⚠️", false
+                );
+                return;
+            }
+        }
+
         const staff = evento.mensajesEnviados || [];
         const confirmados = staff.filter((m) => m.estado === "confirmado").length;
         const pendientes = staff.filter((m) => m.estado === "pendiente").length;
@@ -168,7 +183,7 @@ export function registerEventDetailModal(deps) {
             textoStaff = "Staff completo ✔";
             staffColorClass = "detail-staff-ok";
         } else if (totalAsignados > 0) {
-            textoStaff = `Falta${faltanMozos === 1 ? "" : "n"} ${faltanMozos} mozo${faltanMozos === 1 ? "" : "s"}`;
+            textoStaff = `Falta${faltanMozos === 1 ? "" : "n"} ${faltanMozos} staff`;
             staffColorClass = "detail-staff-warning";
         }
 
@@ -191,51 +206,82 @@ export function registerEventDetailModal(deps) {
                   <span class="status-badge status-badge--${(evento.status || "").replace(" ", "-")}">${evento.status}</span>
                 </div>
                 <div class="detail-cliente">${evento.client}</div>
-                <div class="detail-tipo">${evento.type}</div>
+                <div class="detail-tipo">${evento.esMultidia && evento.jornadas?.length > 0
+                    ? [...new Set(evento.jornadas.map(j => j.tipo).filter(Boolean))].join(" · ")
+                    : evento.type || "-"
+                }</div>
               </div>
 
               <div class="detail-row">
-                📍 <strong>${evento.place || "-"}</strong>${evento.placeUrl ? ` <a href="${evento.placeUrl}" target="_blank" class="detail-maps-link">Ver en Maps</a>` : ""}<br>
-                👥 <strong>${evento.guests || "-"}</strong> personas<br>
-                🕒 Evento: <strong>${evento.horaInicio || "-"}</strong> a <strong>${evento.horaFin || "-"}</strong><br>
-                👔 Presentación: <strong>${evento.horaPresentacion || "-"}</strong><br>
-                💰 Total: <strong>$${Number(evento.total || 0).toLocaleString()}</strong>
-                ${evento.paid ? `<span class="detail-cobrado-badge">COBRADO</span>` : ""}<br>
-                💵 Seña: <strong>$${Number(evento.deposit || 0).toLocaleString()}</strong><br>
-                👥 <span class="${staffColorClass}">${textoStaff}</span>
-                <span class="detail-staff-conteo"> · ✔ ${confirmados} · ⏳ ${pendientes} · ❌ ${rechazados}</span>
-                ${evento.notes ? `<br>📝 <em class="detail-notes">${evento.notes}</em>` : ""}
-                ${evento.presupuestoURL ? `<br>📄 Presupuesto: <a href="${evento.presupuestoURL}" target="_blank" class="detail-maps-link">Ver</a>` : ""}
-                ${evento.invoiceNumber ? `<br>🧾 Factura: <strong>${evento.invoiceType || ""} ${evento.invoiceNumber}</strong>${evento.facturaURL ? ` <a href="${evento.facturaURL}" target="_blank" class="detail-maps-link">Ver</a>` : ""}` : ""}
-                ${alquileresDetalle}
-                ${evento.esMultidia && evento.jornadas?.length > 0 ? `
-  <div class="detail-jornadas">
-    <div class="detail-jornadas-titulo">📅 Jornadas</div>
-    ${evento.jornadas.map((j, i) => {
-                const fecha = j.fecha
-                    ? new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR")
-                    : `Jornada ${i + 1}`;
-                const totalCheck = j.checklist?.length || 0;
-                const preparados = j.checklist?.filter(c => c.preparado).length || 0;
-                const staffAsig = j.mensajesEnviados?.length || 0;
-                const confirmados = j.mensajesEnviados?.filter(m => m.estado === "confirmado").length || 0;
-                return `
-        <div class="detail-jornada-item">
-          <div class="detail-jornada-fecha">${fecha}</div>
-          <div class="detail-jornada-info">
-            🍽 ${j.tipo || "-"}<br>
-            📍 ${j.lugar || "-"}<br>
-            🕒 ${j.horaInicio || "-"} a ${j.horaFin || "-"}
-            ${staffAsig > 0 ? `<br>👥 ${confirmados}/${staffAsig} staff confirmado` : ""}
-            ${totalCheck > 0 ? `<br>📦 ${preparados}/${totalCheck} ítems preparados` : ""}
-            ${j.notas ? `<br>📝 <em>${j.notas}</em>` : ""}
-          </div>
-        </div>
-      `;
-            }).join("")}
-  </div>
+  ${!evento.esMultidia ? `
+    📍 <strong>${evento.place || "-"}</strong>${evento.placeUrl ? ` <a href="${evento.placeUrl}" target="_blank" class="detail-maps-link">Ver en Maps</a>` : ""}<br>
+    👥 <strong>${evento.guests || "-"}</strong> personas<br>
+    🕒 Evento: <strong>${evento.horaInicio || "-"}</strong> a <strong>${evento.horaFin || "-"}</strong><br>
+    👔 Presentación: <strong>${evento.horaPresentacion || "-"}</strong><br>
+  ` : ""}
+  💰 Total: <strong>$${Number(evento.total || 0).toLocaleString()}</strong>
+  ${evento.paid ? `<span class="detail-cobrado-badge">COBRADO</span>` : ""}<br>
+  💵 Seña: <strong>$${Number(evento.deposit || 0).toLocaleString()}</strong><br>
+  ${!evento.esMultidia ? `
+    🤵 <span class="${staffColorClass}">${textoStaff}</span>
+    <span class="detail-staff-conteo"> · ✔ ${confirmados} · ⏳ ${pendientes} · ❌ ${rechazados}</span><br>
+  ` : ""}
+  ${evento.notes ? `📝 <em class="detail-notes">${evento.notes}</em><br>` : ""}
+  ${evento.presupuestoURL ? `📄 Presupuesto: <a href="${evento.presupuestoURL}" target="_blank" class="detail-maps-link">Ver</a><br>` : ""}
+  ${evento.invoiceNumber ? `🧾 Factura: <strong>${evento.invoiceType || ""} ${evento.invoiceNumber}</strong>${evento.facturaURL ? ` <a href="${evento.facturaURL}" target="_blank" class="detail-maps-link">Ver</a>` : ""}<br>` : ""}
+  ${alquileresDetalle}
+  ${evento.esMultidia && evento.jornadas?.length > 0 ? `
+    <div class="detail-jornadas">
+      <div class="detail-jornadas-titulo">📅 Jornadas</div>
+      ${evento.jornadas.map((j, i) => {
+                    const fecha = j.fecha ? new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR") : `Jornada ${i + 1}`;
+                    const totalCheck = j.checklist?.length || 0;
+                    const preparados = j.checklist?.filter(c => c.preparado).length || 0;
+                    const staffAsig = j.mensajesEnviados?.length || 0;
+                    const confirmados = j.mensajesEnviados?.filter(m => m.estado === "confirmado").length || 0;
+                    return `
+          <div class="detail-jornada-item">
+            <div class="detail-jornada-fecha">${fecha}</div>
+            <div class="detail-jornada-info">
+              🍽 ${j.tipo || "-"}<br>
+              📍 ${j.lugar || "-"}<br>
+              ${j.invitados ? `👥 <strong>${j.invitados}</strong> personas<br>` : ""}
+              🕒 ${j.horaInicio || "-"} a ${j.horaFin || "-"}
+              ${j.horaPresentacion ? `<br>👔 Presentación: ${j.horaPresentacion}` : ""}
+              ${(() => {
+                            const necesario = Number(j.staffNecesario || 0);
+                            const pendientesJ = j.mensajesEnviados?.filter(m => m.estado === "pendiente").length || 0;
+                            const rechazadosJ = j.mensajesEnviados?.filter(m => m.estado === "rechazado").length || 0;
+                            const activos = confirmados + pendientesJ;
+                            const faltan = Math.max(necesario - activos, 0);
+
+                            let textoJ = "Sin staff asignado";
+                            let colorJ = "detail-staff-danger";
+                            if (activos > 0 && faltan === 0) { textoJ = "Staff completo ✔"; colorJ = "detail-staff-ok"; }
+                            else if (activos > 0 && faltan === 1) { textoJ = "Falta 1 staff"; colorJ = "detail-staff-warning"; }
+                            else if (activos > 0) { textoJ = `Faltan ${faltan} staff`; colorJ = "detail-staff-warning"; }
+                            return staffAsig > 0 || necesario > 0
+                                ? `<br>🤵 <span class="${colorJ}">${textoJ}</span> <span class="detail-staff-conteo">· ✔ ${confirmados} · ⏳ ${pendientesJ} · ❌ ${rechazadosJ}</span>`
+                                : "";
+                        })()}
+                            ${totalCheck > 0 ? `<br>📦 ${preparados}/${totalCheck} ítems preparados` : ""}
+                            ${j.alquileres && Object.values(j.alquileres).some(v => v === true) ? `
+  <br>🪑 <span class="event-card__alquileres">Alquileres: ${[
+                                j.alquileres.vajilla ? "Vajilla" : null,
+                                j.alquileres.manteleria ? "Mantelería" : null,
+                                j.alquileres.mobiliario ? "Mobiliario" : null,
+                                j.alquileres.mobiliarioTrabajo ? "Mob. trabajo" : null,
+                            ].filter(Boolean).join(" · ")}</span>
+  ${j.alquileres.notas ? `<br><span class="detail-notas-alquiler">📋 ${j.alquileres.notas}</span>` : ""}
 ` : ""}
-              </div>
+              ${j.notas ? `<br>📝 <em>${j.notas}</em>` : ""}
+            </div>
+          </div>
+        `;
+                }).join("")}
+    </div>
+  ` : ""}
+</div>
             `;
         }
 
@@ -299,7 +345,25 @@ export function registerEventDetailModal(deps) {
             staffBtn.style.display = "";
             staffBtn.onclick = () => {
                 window.cerrarModalDetalle();
-                window.abrirModalGestionStaff(eventoId);
+                if (evento.esMultidia && evento.jornadas?.length > 0) {
+                    // Mostrar selector de jornada
+                    const opciones = evento.jornadas.map((j, i) => {
+                        const fecha = j.fecha
+                            ? new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR")
+                            : `Jornada ${i + 1}`;
+                        return `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'; window._modoStaffJornada=true; document.getElementById('modalGestionStaff').dataset.jornadaIdx=${i}; window.abrirModalGestionStaff('${eventoId}')"
+                    class="btn-aviso-confirmar" style="margin-bottom:6px;">
+                    Jornada ${i + 1} · ${fecha} · ${j.tipo || "-"}
+                </button>`;
+                    }).join("");
+                    window.mostrarAvisoSimple(
+                        "¿Qué jornada?",
+                        `<div style="display:flex;flex-direction:column;gap:4px;">${opciones}</div>`,
+                        "👥", false
+                    );
+                } else {
+                    window.abrirModalGestionStaff(eventoId);
+                }
             };
         }
 
@@ -307,7 +371,27 @@ export function registerEventDetailModal(deps) {
             checklistBtn.style.display = "";
             checklistBtn.onclick = () => {
                 window.cerrarModalDetalle();
-                window.abrirModalChecklist(eventoId);
+                if (evento.esMultidia && evento.jornadas?.length > 0) {
+                    const opciones = evento.jornadas.map((j, i) => {
+                        const fecha = j.fecha
+                            ? new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR")
+                            : `Jornada ${i + 1}`;
+                        const total = j.checklist?.length || 0;
+                        const preparados = j.checklist?.filter(c => c.preparado).length || 0;
+                        return `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'; window.abrirChecklistJornada(${i}, '${eventoId}')"
+                    class="btn-aviso-confirmar" style="margin-bottom:6px;">
+                    Jornada ${i + 1} · ${fecha} · ${j.tipo || "-"}
+                    ${total > 0 ? `<span style="opacity:0.7;font-size:11px;"> (${preparados}/${total})</span>` : ""}
+                </button>`;
+                    }).join("");
+                    window.mostrarAvisoSimple(
+                        "¿Qué jornada?",
+                        `<div style="display:flex;flex-direction:column;gap:4px;">${opciones}</div>`,
+                        "📦", false
+                    );
+                } else {
+                    window.abrirModalChecklist(eventoId);
+                }
             };
         }
 

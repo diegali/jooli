@@ -69,17 +69,17 @@ function getStaffSource(evento) {
 // AVISO MODAL
 // ===============================
 window.mostrarAvisoStaff = function (titulo, mensaje, icono = "⚠️", mostrarBoton = true) {
-  const modal      = document.getElementById("modalAvisoSimple");
-  const tituloEl   = document.getElementById("modalAvisoTitulo");
-  const mensajeEl  = document.getElementById("modalAvisoMensaje");
-  const iconoEl    = document.getElementById("modalAvisoIcono");
+  const modal = document.getElementById("modalAvisoSimple");
+  const tituloEl = document.getElementById("modalAvisoTitulo");
+  const mensajeEl = document.getElementById("modalAvisoMensaje");
+  const iconoEl = document.getElementById("modalAvisoIcono");
   const btnEntendido = document.getElementById("btnCerrarAvisoSimple");
 
   if (!modal || !tituloEl || !mensajeEl || !iconoEl) return;
 
-  tituloEl.textContent  = titulo;
-  mensajeEl.innerHTML   = mensaje;
-  iconoEl.textContent   = icono;
+  tituloEl.textContent = titulo;
+  mensajeEl.innerHTML = mensaje;
+  iconoEl.textContent = icono;
 
   if (btnEntendido) {
     btnEntendido.style.display = mostrarBoton ? "inline-block" : "none";
@@ -92,17 +92,17 @@ window.mostrarAvisoStaff = function (titulo, mensaje, icono = "⚠️", mostrarB
 // STAFF GENERAL (ABM)
 // ===============================
 export async function guardarMozo() {
-  const nombreInput    = document.getElementById("mozoNombre");
-  const telefonoInput  = document.getElementById("mozoTelefono");
+  const nombreInput = document.getElementById("mozoNombre");
+  const telefonoInput = document.getElementById("mozoTelefono");
 
   if (!nombreInput || !telefonoInput) return;
 
-  const dniInput       = document.getElementById("mozoDni");
+  const dniInput = document.getElementById("mozoDni");
   const categoriaInput = document.getElementById("mozoCategoria");
 
-  const nombre    = nombreInput.value.trim();
-  const telefono  = telefonoInput.value.trim();
-  const dni       = dniInput?.value.trim() || "";
+  const nombre = nombreInput.value.trim();
+  const telefono = telefonoInput.value.trim();
+  const dni = dniInput?.value.trim() || "";
   const categoria = categoriaInput?.value || "Mozo";
 
   if (!nombre || !telefono) {
@@ -115,7 +115,7 @@ export async function guardarMozo() {
       nombre, telefono, dni, categoria,
       createdAt: new Date(),
     });
-    nombreInput.value  = "";
+    nombreInput.value = "";
     telefonoInput.value = "";
     if (dniInput) dniInput.value = "";
   } catch (e) {
@@ -149,7 +149,7 @@ function renderStaffList(snapshot) {
   let html = "";
 
   snapshot.forEach((docSnap) => {
-    const mozo    = docSnap.data();
+    const mozo = docSnap.data();
     const inicial = mozo.nombre ? mozo.nombre.charAt(0).toUpperCase() : "?";
 
     html += `
@@ -170,40 +170,40 @@ function renderStaffList(snapshot) {
 }
 
 window.editarMozo = function (id, nombre, telefono, dni, categoria) {
-  const nombreInput    = document.getElementById("mozoNombre");
-  const telefonoInput  = document.getElementById("mozoTelefono");
-  const dniInput       = document.getElementById("mozoDni");
+  const nombreInput = document.getElementById("mozoNombre");
+  const telefonoInput = document.getElementById("mozoTelefono");
+  const dniInput = document.getElementById("mozoDni");
   const categoriaInput = document.getElementById("mozoCategoria");
-  const btnAgregar     = document.querySelector(".btn-staff-agregar");
+  const btnAgregar = document.querySelector(".btn-staff-agregar");
 
-  if (nombreInput)    nombreInput.value    = nombre;
-  if (telefonoInput)  telefonoInput.value  = telefono;
-  if (dniInput)       dniInput.value       = dni;
+  if (nombreInput) nombreInput.value = nombre;
+  if (telefonoInput) telefonoInput.value = telefono;
+  if (dniInput) dniInput.value = dni;
   if (categoriaInput) categoriaInput.value = categoria;
 
   if (btnAgregar) {
     btnAgregar.textContent = "Guardar";
-    btnAgregar.onclick     = () => window.guardarEdicionMozo(id);
+    btnAgregar.onclick = () => window.guardarEdicionMozo(id);
   }
 
   let btnCancelar = document.getElementById("btnCancelarEdicionStaff");
   if (!btnCancelar) {
-    btnCancelar           = document.createElement("button");
-    btnCancelar.id        = "btnCancelarEdicionStaff";
+    btnCancelar = document.createElement("button");
+    btnCancelar.id = "btnCancelarEdicionStaff";
     btnCancelar.className = "btn-staff-cancelar";
     btnCancelar.textContent = "Cancelar";
     btnAgregar.insertAdjacentElement("afterend", btnCancelar);
   }
   btnCancelar.style.display = "inline-block";
-  btnCancelar.onclick       = () => window.resetFormStaff();
+  btnCancelar.onclick = () => window.resetFormStaff();
 
   document.getElementById("mozoNombre")?.scrollIntoView({ behavior: "smooth" });
 };
 
 window.guardarEdicionMozo = async function (id) {
-  const nombre    = document.getElementById("mozoNombre")?.value.trim();
-  const telefono  = document.getElementById("mozoTelefono")?.value.trim();
-  const dni       = document.getElementById("mozoDni")?.value.trim() || "";
+  const nombre = document.getElementById("mozoNombre")?.value.trim();
+  const telefono = document.getElementById("mozoTelefono")?.value.trim();
+  const dni = document.getElementById("mozoDni")?.value.trim() || "";
   const categoria = document.getElementById("mozoCategoria")?.value || "Mozo";
 
   if (!nombre || !telefono) {
@@ -221,18 +221,18 @@ window.guardarEdicionMozo = async function (id) {
 };
 
 window.resetFormStaff = function () {
-  const nombreInput   = document.getElementById("mozoNombre");
+  const nombreInput = document.getElementById("mozoNombre");
   const telefonoInput = document.getElementById("mozoTelefono");
-  const dniInput      = document.getElementById("mozoDni");
-  const btnAgregar    = document.querySelector(".btn-staff-agregar");
+  const dniInput = document.getElementById("mozoDni");
+  const btnAgregar = document.querySelector(".btn-staff-agregar");
 
-  if (nombreInput)   nombreInput.value   = "";
+  if (nombreInput) nombreInput.value = "";
   if (telefonoInput) telefonoInput.value = "";
-  if (dniInput)      dniInput.value      = "";
+  if (dniInput) dniInput.value = "";
 
   if (btnAgregar) {
     btnAgregar.textContent = "+ Agregar";
-    btnAgregar.onclick     = () => guardarMozo();
+    btnAgregar.onclick = () => guardarMozo();
   }
 
   const btnCancelar = document.getElementById("btnCancelarEdicionStaff");
@@ -277,10 +277,10 @@ export async function renderStaffSelection() {
     let staffData = staffCache;
 
     if (staffData.length === 0) {
-      const q        = query(collection(db, "staff"), orderBy("nombre"));
+      const q = query(collection(db, "staff"), orderBy("nombre"));
       const snapshot = await getDocs(q);
-      staffData      = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      staffCache     = staffData;
+      staffData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      staffCache = staffData;
     }
 
     container.innerHTML = "";
@@ -308,16 +308,16 @@ function hayCambiosSinGuardarEvento(evento) {
   const editEventId = window.editingId || "";
   if (!editEventId || editEventId !== evento.id) return false;
 
-  const dateForm       = document.getElementById("date")?.value       || "";
-  const placeForm      = document.getElementById("place")?.value      || "";
+  const dateForm = document.getElementById("date")?.value || "";
+  const placeForm = document.getElementById("place")?.value || "";
   const horaInicioForm = document.getElementById("horaInicio")?.value || "";
-  const horaFinForm    = document.getElementById("horaFin")?.value    || "";
+  const horaFinForm = document.getElementById("horaFin")?.value || "";
 
   return (
-    dateForm       !== (evento.date       || "") ||
-    placeForm      !== (evento.place      || "") ||
+    dateForm !== (evento.date || "") ||
+    placeForm !== (evento.place || "") ||
     horaInicioForm !== (evento.horaInicio || "") ||
-    horaFinForm    !== (evento.horaFin    || "")
+    horaFinForm !== (evento.horaFin || "")
   );
 }
 
@@ -334,34 +334,34 @@ window.abrirModalGestionStaff = async function (eventId) {
   }
 
   // Reset del panel de selección
-  const panelReset     = document.getElementById("contenedorSeleccionStaff");
-  const botonReset     = document.getElementById("btnAbrirSeleccion");
-  const listaReset     = document.getElementById("listaGestionStaffContenido");
+  const panelReset = document.getElementById("contenedorSeleccionStaff");
+  const botonReset = document.getElementById("btnAbrirSeleccion");
+  const listaReset = document.getElementById("listaGestionStaffContenido");
   const btnCerrarReset = document.getElementById("btnCerrarModalStaff");
 
-  if (panelReset)     panelReset.style.display = "none";
-  if (listaReset)     listaReset.classList.remove("staff-disabled");
+  if (panelReset) panelReset.style.display = "none";
+  if (listaReset) listaReset.classList.remove("staff-disabled");
   if (btnCerrarReset) btnCerrarReset.style.display = "inline-flex";
   if (botonReset) {
     botonReset.innerText = "+ Agregar";
-    botonReset.disabled  = false;
+    botonReset.disabled = false;
     botonReset.classList.remove("completo");
   }
 
   // Determinar si operamos sobre una jornada o el evento
   const { source: staffSource, esJornada, jornadaIdx } = getStaffSource(evento);
 
-  const modal     = document.getElementById("modalGestionStaff");
+  const modal = document.getElementById("modalGestionStaff");
   const container = document.getElementById("listaGestionStaffContenido");
-  const titulo    = document.getElementById("tituloModalStaff");
-  const resumen   = document.getElementById("resumenStaffEvento");
+  const titulo = document.getElementById("tituloModalStaff");
+  const resumen = document.getElementById("resumenStaffEvento");
 
   if (!modal || !container || !titulo) return;
 
   modal.dataset.eventId = eventId;
 
-  const today      = new Date().toISOString().split("T")[0];
-  const fechaRef   = esJornada ? (staffSource.fecha || evento.date) : evento.date;
+  const today = new Date().toISOString().split("T")[0];
+  const fechaRef = esJornada ? (staffSource.fecha || evento.date) : evento.date;
   const soloLectura = fechaRef < today;
 
   // Hora de presentación — solo para evento completo
@@ -369,12 +369,12 @@ window.abrirModalGestionStaff = async function (eventId) {
   if (inputHoraPresentacion) {
     if (!esJornada) {
       if (!evento.horaPresentacion && evento.horaInicio) {
-        const [h, m]   = evento.horaInicio.split(":").map(Number);
+        const [h, m] = evento.horaInicio.split(":").map(Number);
         const totalMin = h * 60 + m - 120;
-        const minDia   = 24 * 60;
+        const minDia = 24 * 60;
         const ajustado = (totalMin + minDia) % minDia;
-        const hh       = String(Math.floor(ajustado / 60)).padStart(2, "0");
-        const mm       = String(ajustado % 60).padStart(2, "0");
+        const hh = String(Math.floor(ajustado / 60)).padStart(2, "0");
+        const mm = String(ajustado % 60).padStart(2, "0");
         const horaCalculada = `${hh}:${mm}`;
         try {
           await updateDoc(doc(db, "events", eventId), { horaPresentacion: horaCalculada });
@@ -383,7 +383,7 @@ window.abrirModalGestionStaff = async function (eventId) {
           console.error("Error guardando hora de presentación:", e);
         }
       }
-      inputHoraPresentacion.value    = evento.horaPresentacion || "";
+      inputHoraPresentacion.value = evento.horaPresentacion || "";
       inputHoraPresentacion.disabled = soloLectura;
       inputHoraPresentacion.onchange = async function () {
         try {
@@ -394,7 +394,7 @@ window.abrirModalGestionStaff = async function (eventId) {
         }
       };
     } else {
-      inputHoraPresentacion.value    = staffSource.horaPresentacion || "";
+      inputHoraPresentacion.value = staffSource.horaPresentacion || "";
       inputHoraPresentacion.disabled = soloLectura;
       inputHoraPresentacion.onchange = async function () {
         staffSource.horaPresentacion = this.value;
@@ -410,6 +410,28 @@ window.abrirModalGestionStaff = async function (eventId) {
     }
   }
 
+  const inputLugarPresentacion = document.getElementById("lugarPresentacionEvento");
+  if (inputLugarPresentacion) {
+    const lugarRef = esJornada ? staffSource : evento;
+    inputLugarPresentacion.value = lugarRef.lugarPresentacion || "";
+    inputLugarPresentacion.disabled = soloLectura;
+    inputLugarPresentacion.onchange = async function () {
+      lugarRef.lugarPresentacion = this.value;
+      try {
+        if (esJornada) {
+          if (window._jornadasActuales?.[jornadaIdx]) {
+            window._jornadasActuales[jornadaIdx].lugarPresentacion = this.value;
+          }
+          await updateDoc(doc(db, "events", eventId), { jornadas: evento.jornadas });
+        } else {
+          await updateDoc(doc(db, "events", eventId), { lugarPresentacion: this.value });
+        }
+      } catch (e) {
+        console.error("Error guardando lugar de presentación:", e);
+      }
+    };
+  }
+
   // Título del modal
   if (esJornada) {
     const fechaJornada = staffSource.fecha
@@ -423,11 +445,11 @@ window.abrirModalGestionStaff = async function (eventId) {
     titulo.innerText = `📅 ${fechaEvento} · ${evento.client}`;
   }
 
-  const mensajes         = ordenarStaff(staffSource.mensajesEnviados || []);
-  const panelSeleccion   = document.getElementById("contenedorSeleccionStaff");
+  const mensajes = ordenarStaff(staffSource.mensajesEnviados || []);
+  const panelSeleccion = document.getElementById("contenedorSeleccionStaff");
   const seleccionAbierta = panelSeleccion && panelSeleccion.style.display !== "none";
-  const totalStaffNecesario = Number(evento.staffNecesario || 0);
-  const totalStaffAsignado  = mensajes.filter(m => obtenerEstadoStaff(m) !== "rechazado").length;
+  const totalStaffNecesario = esJornada ? Number(staffSource.staffNecesario || 0) : Number(evento.staffNecesario || 0);
+  const totalStaffAsignado = mensajes.filter(m => obtenerEstadoStaff(m) !== "rechazado").length;
   const staffCompleto = totalStaffNecesario > 0 && totalStaffAsignado >= totalStaffNecesario;
 
   const botonAgregar = document.getElementById("btnAbrirSeleccion");
@@ -437,31 +459,31 @@ window.abrirModalGestionStaff = async function (eventId) {
     } else {
       botonAgregar.style.display = "";
       if (seleccionAbierta) {
-        botonAgregar.disabled  = false;
+        botonAgregar.disabled = false;
         botonAgregar.innerText = "Cancelar";
         botonAgregar.classList.remove("completo");
       } else {
-        botonAgregar.disabled  = staffCompleto;
+        botonAgregar.disabled = staffCompleto;
         botonAgregar.innerText = staffCompleto ? "Completo" : "+ Agregar";
         botonAgregar.classList.toggle("completo", staffCompleto);
       }
     }
   }
 
-  const confirmados    = mensajes.filter(m => obtenerEstadoStaff(m) === "confirmado").length;
-  const pendientes     = mensajes.filter(m => obtenerEstadoStaff(m) === "pendiente").length;
-  const rechazados     = mensajes.filter(m => obtenerEstadoStaff(m) === "rechazado").length;
-  const staffNecesario = Number(evento.staffNecesario || 0);
-  const activos        = confirmados + pendientes;
-  const faltan         = Math.max(staffNecesario - activos, 0);
+  const confirmados = mensajes.filter(m => obtenerEstadoStaff(m) === "confirmado").length;
+  const pendientes = mensajes.filter(m => obtenerEstadoStaff(m) === "pendiente").length;
+  const rechazados = mensajes.filter(m => obtenerEstadoStaff(m) === "rechazado").length;
+  const staffNecesario = esJornada ? Number(staffSource.staffNecesario || 0) : Number(evento.staffNecesario || 0);
+  const activos = confirmados + pendientes;
+  const faltan = Math.max(staffNecesario - activos, 0);
 
   if (resumen) {
-    const linea1     = mensajes.length === 0
+    const linea1 = mensajes.length === 0
       ? "Sin staff asignado"
       : `${confirmados} confirmados · ${pendientes} pendientes${rechazados > 0 ? ` · ${rechazados} rechazados` : ""}`;
     const colorClase = activos === 0 ? "danger" : faltan > 0 ? "warning" : "ok";
-    const linea2     = staffNecesario > 0
-      ? `<span class="staff-resumen-estado staff-resumen-estado--${colorClase}">👥 ${staffNecesario} · ✔ ${activos} · ➕ ${faltan}</span>`
+    const linea2 = staffNecesario > 0
+      ? `<span class="staff-resumen-estado staff-resumen-estado--${colorClase}">🤵 ${staffNecesario} necesarios · ✔ ${activos} · ➕ ${faltan}</span>`
       : "";
     resumen.innerHTML = linea2 ? `${linea1}<br>${linea2}` : linea1;
   }
@@ -470,24 +492,24 @@ window.abrirModalGestionStaff = async function (eventId) {
     container.innerHTML = "<p class='staff-sin-datos'>No hay staff asignado todavía.</p>";
   } else {
     const estadoTexto = { confirmado: "Confirmado", rechazado: "Rechazado", pendiente: "Pendiente" };
-    const mozos       = mensajes.filter(m => (m.categoria || "Mozo") === "Mozo");
-    const cocina      = mensajes.filter(m => m.categoria === "Cocina");
+    const mozos = mensajes.filter(m => (m.categoria || "Mozo") === "Mozo");
+    const cocina = mensajes.filter(m => m.categoria === "Cocina");
 
     const renderGrupo = (lista, tituloGrupo) => {
       if (lista.length === 0) return "";
       return `
         <div class="staff-grupo-titulo">${tituloGrupo}</div>
         ${lista.map(m => {
-          const nombre          = normalizarNombreStaff(m);
-          const estado          = obtenerEstadoStaff(m);
-          const whatsappEnviado = obtenerWhatsappEnviado(m);
-          const inicial         = nombre ? nombre.charAt(0).toUpperCase() : "?";
-          return `
+        const nombre = normalizarNombreStaff(m);
+        const estado = obtenerEstadoStaff(m);
+        const whatsappEnviado = obtenerWhatsappEnviado(m);
+        const inicial = nombre ? nombre.charAt(0).toUpperCase() : "?";
+        return `
             <div class="staff-gestion-item ${seleccionAbierta ? "staff-gestion-item--disabled" : ""}">
               ${soloLectura
-                ? `<div title="${estadoTexto[estado] || estado}" class="staff-avatar staff-avatar--${estado}">${inicial}</div>`
-                : `<button onclick="window.rotarEstado('${eventId}','${nombre}')" title="Cambiar estado" class="staff-avatar staff-avatar--${estado}">${inicial}</button>`
-              }
+            ? `<div title="${estadoTexto[estado] || estado}" class="staff-avatar staff-avatar--${estado}">${inicial}</div>`
+            : `<button onclick="window.rotarEstado('${eventId}','${nombre}')" title="Cambiar estado" class="staff-avatar staff-avatar--${estado}">${inicial}</button>`
+          }
               <div class="staff-list-info">
                 <div class="staff-list-nombre">${escapeHtml(nombre)}</div>
                 <div class="staff-estado staff-estado--${estado}">${estadoTexto[estado] || "Pendiente"}</div>
@@ -498,14 +520,14 @@ window.abrirModalGestionStaff = async function (eventId) {
                 class="btn-icon wa"
               >
                 ${whatsappEnviado
-                  ? '<i class="fa-solid fa-check sent-icon"></i>'
-                  : '<i class="fa-brands fa-whatsapp"></i>'
-                }
+            ? '<i class="fa-solid fa-check sent-icon"></i>'
+            : '<i class="fa-brands fa-whatsapp"></i>'
+          }
               </button>
               ${soloLectura ? "" : `<button onclick="window.quitarStaff('${eventId}','${nombre}')" title="Quitar" class="btn-catalogo-eliminar">🗑</button>`}
             </div>
           `;
-        }).join("")}
+      }).join("")}
       `;
     };
 
@@ -516,17 +538,17 @@ window.abrirModalGestionStaff = async function (eventId) {
 };
 
 window.cerrarModalGestionStaff = function () {
-  const modal      = document.getElementById("modalGestionStaff");
-  const panel      = document.getElementById("contenedorSeleccionStaff");
-  const boton      = document.getElementById("btnAbrirSeleccion");
+  const modal = document.getElementById("modalGestionStaff");
+  const panel = document.getElementById("contenedorSeleccionStaff");
+  const boton = document.getElementById("btnAbrirSeleccion");
   const listaStaff = document.getElementById("listaGestionStaffContenido");
   const btnCerrarModal = document.getElementById("btnCerrarModalStaff");
 
   if (btnCerrarModal) btnCerrarModal.style.display = "inline-flex";
-  if (panel)          panel.style.display = "none";
-  if (boton)          boton.innerText = "+ Agregar";
-  if (listaStaff)     listaStaff.classList.remove("staff-disabled");
-  if (modal)          modal.style.display = "none";
+  if (panel) panel.style.display = "none";
+  if (boton) boton.innerText = "+ Agregar";
+  if (listaStaff) listaStaff.classList.remove("staff-disabled");
+  if (modal) modal.style.display = "none";
 
   // Limpiar modo jornada
   window._modoStaffJornada = false;
@@ -537,23 +559,23 @@ window.cerrarModalGestionStaff = function () {
 // ASIGNAR STAFF A EVENTO
 // ===============================
 async function togglePanelSeleccionStaff() {
-  const panel          = document.getElementById("contenedorSeleccionStaff");
-  const boton          = document.getElementById("btnAbrirSeleccion");
-  const listado        = document.getElementById("listadoCheckboxesCompleto");
-  const modal          = document.getElementById("modalGestionStaff");
-  const listaStaff     = document.getElementById("listaGestionStaffContenido");
+  const panel = document.getElementById("contenedorSeleccionStaff");
+  const boton = document.getElementById("btnAbrirSeleccion");
+  const listado = document.getElementById("listadoCheckboxesCompleto");
+  const modal = document.getElementById("modalGestionStaff");
+  const listaStaff = document.getElementById("listaGestionStaffContenido");
   const btnCerrarModal = document.getElementById("btnCerrarModalStaff");
 
   if (!panel || !boton || !listado || !modal || !listaStaff) return;
 
   const eventId = modal.dataset.eventId;
-  const evento  = window.allEventsData.find((e) => e.id === eventId);
+  const evento = window.allEventsData.find((e) => e.id === eventId);
   if (!evento) return;
 
-  const { source: staffSource } = getStaffSource(evento);
+  const { source: staffSource, esJornada: esJornadaPanel } = getStaffSource(evento);
 
-  const totalStaffNecesario = Number(evento.staffNecesario || 0);
-  const totalStaffAsignado  = (staffSource.mensajesEnviados || []).filter(
+  const totalStaffNecesario = esJornadaPanel ? Number(staffSource.staffNecesario || 0) : Number(evento.staffNecesario || 0);
+  const totalStaffAsignado = (staffSource.mensajesEnviados || []).filter(
     m => obtenerEstadoStaff(m) !== "rechazado"
   ).length;
 
@@ -566,7 +588,7 @@ async function togglePanelSeleccionStaff() {
 
   let staffDisponiblesData = staffCache;
   if (staffDisponiblesData.length === 0) {
-    const q        = query(collection(db, "staff"), orderBy("nombre"));
+    const q = query(collection(db, "staff"), orderBy("nombre"));
     const snapshot = await getDocs(q);
     staffDisponiblesData = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     staffCache = staffDisponiblesData;
@@ -580,10 +602,10 @@ async function togglePanelSeleccionStaff() {
   }
 
   if (panel.style.display === "none" || panel.style.display === "") {
-    let html          = "";
+    let html = "";
     let hayDisponibles = false;
 
-    const disponiblesMozos  = staffDisponibles.filter(d => (d.categoria || "Mozo") === "Mozo");
+    const disponiblesMozos = staffDisponibles.filter(d => (d.categoria || "Mozo") === "Mozo");
     const disponiblesCocina = staffDisponibles.filter(d => d.categoria === "Cocina");
 
     const renderGrupoSeleccion = (lista, tituloGrupo) => {
@@ -614,22 +636,22 @@ async function togglePanelSeleccionStaff() {
       : "<p class='staff-sin-datos'>Todos los mozos ya han sido asignados a este evento.</p>";
 
     panel.style.display = "block";
-    boton.innerText     = "Cancelar";
+    boton.innerText = "Cancelar";
     listaStaff.classList.add("staff-disabled");
     if (btnCerrarModal) btnCerrarModal.style.display = "none";
   } else {
     panel.style.display = "none";
-    boton.innerText     = "+ Agregar";
+    boton.innerText = "+ Agregar";
     listaStaff.classList.remove("staff-disabled");
     if (btnCerrarModal) btnCerrarModal.style.display = "inline-flex";
   }
 }
 
 async function confirmarAsignacionStaff() {
-  const modal          = document.getElementById("modalGestionStaff");
-  const panel          = document.getElementById("contenedorSeleccionStaff");
-  const boton          = document.getElementById("btnAbrirSeleccion");
-  const listaStaff     = document.getElementById("listaGestionStaffContenido");
+  const modal = document.getElementById("modalGestionStaff");
+  const panel = document.getElementById("contenedorSeleccionStaff");
+  const boton = document.getElementById("btnAbrirSeleccion");
+  const listaStaff = document.getElementById("listaGestionStaffContenido");
   const btnCerrarModal = document.getElementById("btnCerrarModalStaff");
 
   if (!modal) return;
@@ -644,10 +666,10 @@ async function confirmarAsignacionStaff() {
   }
 
   const nuevosAsignados = Array.from(checks).map(c => ({
-    nombre:          c.dataset.nombre,
-    telefono:        c.dataset.tel,
-    categoria:       c.dataset.categoria || "Mozo",
-    estado:          "pendiente",
+    nombre: c.dataset.nombre,
+    telefono: c.dataset.tel,
+    categoria: c.dataset.categoria || "Mozo",
+    estado: "pendiente",
     whatsappEnviado: false,
   }));
 
@@ -658,7 +680,7 @@ async function confirmarAsignacionStaff() {
     const { source: staffSource, esJornada, jornadaIdx } = getStaffSource(evento);
 
     const staffExistente = staffSource.mensajesEnviados || [];
-    const staffFinal     = [...staffExistente];
+    const staffFinal = [...staffExistente];
 
     nuevosAsignados.forEach(nuevo => {
       if (!staffFinal.find(s => normalizarNombreStaff(s) === nuevo.nombre)) {
@@ -666,8 +688,8 @@ async function confirmarAsignacionStaff() {
       }
     });
 
-    const totalStaffNecesario = Number(evento.staffNecesario || 0);
-    const totalStaffAsignado  = staffFinal.filter(s => obtenerEstadoStaff(s) !== "rechazado").length;
+    const totalStaffNecesario = esJornada ? Number(staffSource.staffNecesario || 0) : Number(evento.staffNecesario || 0);
+    const totalStaffAsignado = staffFinal.filter(s => obtenerEstadoStaff(s) !== "rechazado").length;
     const staffCompleto = totalStaffNecesario > 0 && totalStaffAsignado >= totalStaffNecesario;
 
     staffSource.mensajesEnviados = staffFinal;
@@ -682,14 +704,14 @@ async function confirmarAsignacionStaff() {
       evento.mensajesEnviados = staffFinal;
     }
 
-    if (panel)          panel.style.display = "none";
+    if (panel) panel.style.display = "none";
     if (boton) {
       boton.innerText = staffCompleto ? "Completo" : "+ Agregar";
-      boton.disabled  = staffCompleto;
+      boton.disabled = staffCompleto;
       boton.classList.toggle("completo", staffCompleto);
     }
-    if (listaStaff)      listaStaff.classList.remove("staff-disabled");
-    if (btnCerrarModal)  btnCerrarModal.style.display = "inline-flex";
+    if (listaStaff) listaStaff.classList.remove("staff-disabled");
+    if (btnCerrarModal) btnCerrarModal.style.display = "inline-flex";
 
     window.abrirModalGestionStaff(eventId);
   } catch (e) {
@@ -714,7 +736,7 @@ window.confirmarQuitarStaff = async function (eventId, nombreMozo) {
   document.getElementById("modalAvisoSimple").style.display = "none";
 
   const eventoRef = doc(db, "events", eventId);
-  const evento    = window.allEventsData.find(e => e.id === eventId);
+  const evento = window.allEventsData.find(e => e.id === eventId);
   if (!evento) return;
 
   const { source: staffSource, esJornada, jornadaIdx } = getStaffSource(evento);
@@ -759,13 +781,13 @@ window.enviarWhatsApp = async function (eventId, nombreMozo) {
     return;
   }
 
-  const fechaRef    = esJornada ? (staffSource.fecha || evento.date) : evento.date;
+  const fechaRef = esJornada ? (staffSource.fecha || evento.date) : evento.date;
   const fechaEvento = new Date(fechaRef + "T00:00:00").toLocaleDateString("es-AR");
-  const lugarRef    = esJornada ? (staffSource.lugar || evento.place) : evento.place;
-  const tipoRef     = esJornada ? (staffSource.tipo  || evento.type)  : evento.type;
-  const horaInicioRef    = esJornada ? staffSource.horaInicio     : evento.horaInicio;
-  const horaFinRef       = esJornada ? staffSource.horaFin        : evento.horaFin;
-  const horaPresentRef   = esJornada ? staffSource.horaPresentacion : evento.horaPresentacion;
+  const lugarRef = esJornada ? (staffSource.lugar || evento.place) : evento.place;
+  const tipoRef = esJornada ? (staffSource.tipo || evento.type) : evento.type;
+  const horaInicioRef = esJornada ? staffSource.horaInicio : evento.horaInicio;
+  const horaFinRef = esJornada ? staffSource.horaFin : evento.horaFin;
+  const horaPresentRef = esJornada ? staffSource.horaPresentacion : evento.horaPresentacion;
 
   const mensaje =
     `Hola ${normalizarNombreStaff(mozo)}!
@@ -777,7 +799,11 @@ Te contactamos de JOOLI Catering para consultarte si podés trabajar en el sigui
 📍 Lugar: ${lugarRef || "-"}${!esJornada && evento.placeUrl ? `\n${evento.placeUrl}` : ""}
 👥 Invitados: ${evento.guests || "-"} personas
 
-🕒 Presentación: ${horaPresentRef || "-"}
+🕒 Presentación: ${horaPresentRef || "-"}${(() => {
+      const lugarPres = esJornada ? staffSource.lugarPresentacion : evento.lugarPresentacion;
+      return lugarPres ? `\n📍 *Lugar de presentación: ${lugarPres}*` : "";
+    })()
+    }
 🏁 Fin: ${horaFinRef || "-"}
 
 ¿Estás disponible?
@@ -841,9 +867,9 @@ window.rotarEstado = async function (eventId, mozoNombre) {
     mozo = { nombre: mozo, estado: "pendiente", whatsappEnviado: false };
   }
 
-  const estados      = ["pendiente", "confirmado", "rechazado"];
+  const estados = ["pendiente", "confirmado", "rechazado"];
   const currentIndex = estados.indexOf(mozo.estado || "pendiente");
-  mozo.estado        = estados[(currentIndex + 1) % estados.length];
+  mozo.estado = estados[(currentIndex + 1) % estados.length];
 
   const nuevoArray = [...mensajesEnviados];
   nuevoArray[mozoIndex] = mozo;
@@ -898,3 +924,22 @@ export function initStaff() {
 // EXPONER FUNCIONES
 // ===============================
 window.guardarMozo = guardarMozo;
+
+window.abrirModalMapsLugarPresentacion = function () {
+  const confirmarOriginal = window.confirmarUbicacion;
+  window.confirmarUbicacion = function () {
+    const place = window._selectedPlace;
+    if (!place) {
+      window.mostrarAvisoStaff("Sin selección", "Buscá y seleccioná un lugar primero.", "⚠️");
+      return;
+    }
+    const input = document.getElementById("lugarPresentacionEvento");
+    if (input) {
+      input.value = place.nombre || place.direccion;
+      input.dispatchEvent(new Event("change"));
+    }
+    window.cerrarModalMaps();
+    window.confirmarUbicacion = confirmarOriginal;
+  };
+  window.abrirModalMaps();
+};

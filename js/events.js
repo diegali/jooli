@@ -15,9 +15,9 @@ import {
   getCurrentUserName,
   formatDateShort,
 } from "./events/events-utils.js";
-import { initJornadas }  from "./events/events-jornadas.js";
-import { initMaps }      from "./events/events-maps.js";
-import { initAvisos }    from "./events/events-avisos.js";
+import { initJornadas } from "./events/events-jornadas.js";
+import { initMaps } from "./events/events-maps.js";
+import { initAvisos } from "./events/events-avisos.js";
 import { db, auth, storage } from "./auth.js";
 import { renderStaffSelection } from "./staff.js";
 import {
@@ -36,7 +36,7 @@ let editingId = null;
 window.allEventsData = [];
 
 function setEditingId(value) {
-  editingId        = value;
+  editingId = value;
   window.editingId = value;
 }
 
@@ -64,7 +64,7 @@ function rerenderEvents() {
 
   setTimeout(() => {
     document.querySelectorAll(".eventos-mes-titulo").forEach((titulo) => {
-      let siguiente    = titulo.nextElementSibling;
+      let siguiente = titulo.nextElementSibling;
       let tieneVisibles = false;
 
       while (siguiente &&
@@ -80,7 +80,7 @@ function rerenderEvents() {
     });
 
     document.querySelectorAll(".eventos-seccion-titulo").forEach((seccion) => {
-      let siguiente    = seccion.nextElementSibling;
+      let siguiente = seccion.nextElementSibling;
       let tieneVisibles = false;
 
       while (siguiente && !siguiente.classList.contains("eventos-seccion-titulo")) {
@@ -140,13 +140,13 @@ async function saveEvent() {
   const eventData = getFormData();
   if (!validarEventData(eventData)) return;
 
-  const userName  = getCurrentUserName();
+  const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
 
   if (!["Realizado", "Cancelado"].includes(eventData.status)) {
     eventData.realizacionConfirmada = false;
   }
-  eventData.ultimoCambioPor  = userName;
+  eventData.ultimoCambioPor = userName;
   eventData.mensajesEnviados = [];
 
   prepararEventData(eventData);
@@ -154,10 +154,10 @@ async function saveEvent() {
   try {
     await addDoc(collection(db, "events"), eventData);
     await addDoc(collection(db, "notificaciones"), {
-      mensaje:         `${userName} creó el evento "${eventData.client}"${eventData.date ? ` del ${formatDateShort(eventData.date)}` : ""}`,
-      leida:           false,
-      creadoPorEmail:  userEmail,
-      fecha:           serverTimestamp(),
+      mensaje: `${userName} creó el evento "${eventData.client}"${eventData.date ? ` del ${formatDateShort(eventData.date)}` : ""}`,
+      leida: false,
+      creadoPorEmail: userEmail,
+      fecha: serverTimestamp(),
     });
     resetEventForm();
   } catch (error) {
@@ -172,7 +172,7 @@ async function updateExistingEvent() {
   const eventData = getFormData();
   if (!validarEventData(eventData)) return;
 
-  const userName  = getCurrentUserName();
+  const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
 
   delete eventData.presupuestoURL;
@@ -189,10 +189,10 @@ async function updateExistingEvent() {
   try {
     await updateDoc(doc(db, "events", editingId), eventData);
     await addDoc(collection(db, "notificaciones"), {
-      mensaje:         `${userName} modificó el evento "${eventData.client}"${eventData.date ? ` del ${formatDateShort(eventData.date)}` : ""}`,
-      leida:           false,
-      creadoPorEmail:  userEmail,
-      fecha:           serverTimestamp(),
+      mensaje: `${userName} modificó el evento "${eventData.client}"${eventData.date ? ` del ${formatDateShort(eventData.date)}` : ""}`,
+      leida: false,
+      creadoPorEmail: userEmail,
+      fecha: serverTimestamp(),
     });
     resetEventForm();
   } catch (error) {
@@ -277,7 +277,7 @@ function initSearch() {
     });
 
     document.querySelectorAll(".eventos-seccion-titulo, .eventos-mes-titulo").forEach((titulo) => {
-      let siguiente    = titulo.nextElementSibling;
+      let siguiente = titulo.nextElementSibling;
       let tieneVisibles = false;
       while (siguiente &&
         !siguiente.classList.contains("eventos-mes-titulo") &&
@@ -291,7 +291,7 @@ function initSearch() {
     });
 
     document.querySelectorAll(".eventos-seccion-titulo").forEach((seccion) => {
-      let siguiente    = seccion.nextElementSibling;
+      let siguiente = seccion.nextElementSibling;
       let tieneVisibles = false;
       while (siguiente && !siguiente.classList.contains("eventos-seccion-titulo")) {
         if (siguiente.classList.contains("eventos-mes-titulo") && siguiente.style.display !== "none") {
@@ -326,35 +326,35 @@ function updateStats(events) {
 
   eventosFiltrados = eventosFiltrados.filter(e => e.status !== "Cancelado" && e.status !== "Cerrado");
 
-  const totalMes  = eventosFiltrados.reduce((sum, e) => sum + Number(e.total   || 0), 0);
-  const senasMes  = eventosFiltrados.reduce((sum, e) => sum + Number(e.deposit || 0), 0);
-  const cobrado   = eventosFiltrados.filter(e => e.paid === true).reduce((sum, e) => sum + Number(e.total || 0), 0);
+  const totalMes = eventosFiltrados.reduce((sum, e) => sum + Number(e.total || 0), 0);
+  const senasMes = eventosFiltrados.reduce((sum, e) => sum + Number(e.deposit || 0), 0);
+  const cobrado = eventosFiltrados.filter(e => e.paid === true).reduce((sum, e) => sum + Number(e.total || 0), 0);
   const porCobrar = totalMes - cobrado;
 
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-  set("totalMes",    `$${totalMes.toLocaleString()}`);
-  set("senasMes",    `$${senasMes.toLocaleString()}`);
-  set("saldoMes",    `$${(totalMes - senasMes).toLocaleString()}`);
-  set("eventosMes",  eventosFiltrados.length);
-  set("cobradoMes",  `$${cobrado.toLocaleString()}`);
-  set("porCobrarMes",`$${porCobrar.toLocaleString()}`);
+  set("totalMes", `$${totalMes.toLocaleString()}`);
+  set("senasMes", `$${senasMes.toLocaleString()}`);
+  set("saldoMes", `$${(totalMes - senasMes).toLocaleString()}`);
+  set("eventosMes", eventosFiltrados.length);
+  set("cobradoMes", `$${cobrado.toLocaleString()}`);
+  set("porCobrarMes", `$${porCobrar.toLocaleString()}`);
 }
 
 // ===============================
 // AVISO MODAL
 // ===============================
 window.mostrarAvisoSimple = function (titulo, mensaje, icono = "⚠️", mostrarBotonEntendido = true) {
-  const modal      = document.getElementById("modalAvisoSimple");
-  const tituloEl   = document.getElementById("modalAvisoTitulo");
-  const mensajeEl  = document.getElementById("modalAvisoMensaje");
-  const iconoEl    = document.getElementById("modalAvisoIcono");
+  const modal = document.getElementById("modalAvisoSimple");
+  const tituloEl = document.getElementById("modalAvisoTitulo");
+  const mensajeEl = document.getElementById("modalAvisoMensaje");
+  const iconoEl = document.getElementById("modalAvisoIcono");
   const btnEntendido = document.getElementById("btnCerrarAvisoSimple");
 
   if (!modal || !tituloEl || !mensajeEl || !iconoEl) return;
 
   tituloEl.textContent = titulo;
-  mensajeEl.innerHTML  = mensaje;
-  iconoEl.textContent  = icono;
+  mensajeEl.innerHTML = mensaje;
+  iconoEl.textContent = icono;
   if (btnEntendido) btnEntendido.style.display = mostrarBotonEntendido ? "inline-block" : "none";
   modal.style.display = "flex";
 };
@@ -383,7 +383,7 @@ export function initEvents() {
     mostrarAvisoSimple,
     onConfirmarRealizacion: async (evento, statusFinal) => {
       try {
-        const ref  = doc(db, "events", evento.id);
+        const ref = doc(db, "events", evento.id);
         const snap = await getDoc(ref);
         if (!snap.exists()) return;
 
@@ -413,7 +413,7 @@ export function initEvents() {
 
   document.getElementById("cancelFormBtn")?.addEventListener("click", () => {
     const client = document.getElementById("client")?.value;
-    const date   = document.getElementById("date")?.value;
+    const date = document.getElementById("date")?.value;
     if (client || date) {
       mostrarAvisoSimple(
         "¿Cancelar?",
@@ -447,21 +447,21 @@ export function initEvents() {
 
   // Cálculo automático de mozos
   const guestsInput = document.getElementById("guests");
-  const staffInput  = document.getElementById("staffNecesario");
+  const staffInput = document.getElementById("staffNecesario");
   let staffEditadoManualmente = false;
 
   if (guestsInput && staffInput) {
     guestsInput.addEventListener("input", function () {
       const invitados = Number(this.value) || 0;
       if (!staffEditadoManualmente) {
-        staffInput.value = invitados > 0 ? Math.ceil(invitados / 15) : "";
+        staffInput.value = invitados > 0 ? Math.ceil(invitados / 10) : "";
       }
     });
     staffInput.addEventListener("input", function () {
       staffEditadoManualmente = !!this.value;
       if (!staffEditadoManualmente) {
-        const invitados  = Number(guestsInput.value) || 0;
-        staffInput.value = invitados > 0 ? Math.ceil(invitados / 15) : "";
+        const invitados = Number(guestsInput.value) || 0;
+        staffInput.value = invitados > 0 ? Math.ceil(invitados / 10) : "";
       }
     });
   }
@@ -480,9 +480,9 @@ export function initEvents() {
   });
 
   // Presupuesto
-  const presupuestoFile      = document.getElementById("presupuestoFile");
-  const btnSubirPresupuesto  = document.getElementById("btnSubirPresupuesto");
-  const btnVerPresupuesto    = document.getElementById("btnVerPresupuesto");
+  const presupuestoFile = document.getElementById("presupuestoFile");
+  const btnSubirPresupuesto = document.getElementById("btnSubirPresupuesto");
+  const btnVerPresupuesto = document.getElementById("btnVerPresupuesto");
   const btnEliminarPresupuesto = document.getElementById("btnEliminarPresupuesto");
 
   if (btnSubirPresupuesto && presupuestoFile) {
@@ -508,7 +508,7 @@ export function initEvents() {
 
   if (btnEliminarPresupuesto) {
     btnEliminarPresupuesto.addEventListener("click", () => {
-      const ev            = window.allEventsData.find(ev => ev.id === editingId);
+      const ev = window.allEventsData.find(ev => ev.id === editingId);
       const nombreArchivo = ev?.presupuestoNombre || "este archivo";
       mostrarAvisoSimple(
         "¿Eliminar presupuesto?",
@@ -521,8 +521,8 @@ export function initEvents() {
   }
 
   // Factura
-  const facturaFile        = document.getElementById("facturaFile");
-  const btnSubirFactura    = document.getElementById("btnSubirFactura");
+  const facturaFile = document.getElementById("facturaFile");
+  const btnSubirFactura = document.getElementById("btnSubirFactura");
   const btnEliminarFactura = document.getElementById("btnEliminarFactura");
 
   if (btnSubirFactura && facturaFile) {
@@ -541,7 +541,7 @@ export function initEvents() {
 
   if (btnEliminarFactura) {
     btnEliminarFactura.addEventListener("click", () => {
-      const ev            = window.allEventsData.find(ev => ev.id === editingId);
+      const ev = window.allEventsData.find(ev => ev.id === editingId);
       const nombreArchivo = ev?.facturaNombre || "esta factura";
       mostrarAvisoSimple(
         "¿Eliminar factura?",
@@ -568,11 +568,11 @@ export function initEvents() {
     if (!evento) return;
 
     evento.jornadas = window._jornadasActuales ? [...window._jornadasActuales] : [];
-    const jornada   = evento.jornadas[jornadaIndex];
+    const jornada = evento.jornadas[jornadaIndex];
     if (!jornada) return;
     if (!jornada.mensajesEnviados) jornada.mensajesEnviados = [];
 
-    const modal  = document.getElementById("modalGestionStaff");
+    const modal = document.getElementById("modalGestionStaff");
     const titulo = document.getElementById("tituloModalStaff");
     const resumen = document.getElementById("resumenStaffEvento");
     if (!modal || !titulo) return;
@@ -581,24 +581,30 @@ export function initEvents() {
       ? new Date(jornada.fecha + "T00:00:00").toLocaleDateString("es-AR")
       : `Jornada ${jornadaIndex + 1}`;
 
-    titulo.innerText           = `👥 Staff · ${fecha}`;
+    titulo.innerText = `👥 Staff · ${fecha}`;
     if (resumen) resumen.innerHTML = "";
-    modal.dataset.eventId      = window.editingId;
-    modal.dataset.jornadaIdx   = jornadaIndex;
-    window._modoStaffJornada   = true;
+    modal.dataset.eventId = window.editingId;
+    modal.dataset.jornadaIdx = jornadaIndex;
+    window._modoStaffJornada = true;
     window.abrirModalGestionStaff(window.editingId);
   };
 
-  window.abrirChecklistJornada = function (jornadaIndex) {
-    if (!window.editingId) {
-      mostrarAvisoSimple("Guardá primero", "Guardá el evento antes de gestionar el checklist de cada jornada.", "⚠️");
+  window.abrirChecklistJornada = function (jornadaIndex, eventoIdParam) {
+    const eventoId = eventoIdParam || window.editingId;
+    if (!eventoId) {
+      mostrarAvisoSimple("Error", "No se pudo identificar el evento.", "⚠️");
       return;
     }
-    const evento = window.allEventsData.find(e => e.id === window.editingId);
+
+    const evento = window.allEventsData.find(e => e.id === eventoId);
     if (!evento) return;
 
-    evento.jornadas = window._jornadasActuales ? [...window._jornadasActuales] : [];
-    const jornada   = evento.jornadas[jornadaIndex];
+    // Si venimos del formulario de edición sincronizamos jornadas, si no usamos las del evento
+    if (window.editingId === eventoId && window._jornadasActuales) {
+      evento.jornadas = [...window._jornadasActuales];
+    }
+
+    const jornada = evento.jornadas?.[jornadaIndex];
     if (!jornada) return;
     if (!jornada.checklist) jornada.checklist = [];
 
@@ -608,12 +614,12 @@ export function initEvents() {
 
     window.eventoChecklistActual = {
       ...jornada,
-      id:            window.editingId,
-      client:        evento.client,
-      date:          jornada.fecha || evento.date,
-      _esJornada:    true,
+      id: eventoId,
+      client: evento.client,
+      date: jornada.fecha || evento.date,
+      _esJornada: true,
       _jornadaIndex: jornadaIndex,
-      _eventoReal:   evento,
+      _eventoReal: evento,
     };
 
     const titulo = document.getElementById("tituloModalChecklist");
@@ -624,7 +630,7 @@ export function initEvents() {
   };
 
   registerEventDetailModal({
-    getAllEvents:            () => window.allEventsData || [],
+    getAllEvents: () => window.allEventsData || [],
     setEditingId,
     renderStaffSelection,
     puedeEditarPresupuesto: () => puedeEditarPresupuesto(auth),

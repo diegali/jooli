@@ -105,6 +105,23 @@ export function initJornadas({ mostrarAvisoSimple }) {
     }
 
     window._jornadasActuales[index][campo] = valor;
+    // Calcular mozos automáticamente al cambiar invitados
+    if (campo === "invitados") {
+      const cantidad = Number(valor) || 0;
+      if (!window._jornadasActuales[index]._mozosEditados) {
+        const calculado = cantidad > 0 ? Math.ceil(cantidad / 10) : "";
+        window._jornadasActuales[index].staffNecesario = calculado;
+        // Actualizar el input de mozos directamente sin re-renderizar
+        const jornadaCards = document.querySelectorAll(".jornada-card");
+        const mozosInput = jornadaCards[index]?.querySelector(".jornada-mozos input");
+        if (mozosInput) mozosInput.value = calculado;
+      }
+    }
+
+    // Marcar mozos como editados manualmente
+    if (campo === "staffNecesario" && valor !== "") {
+      window._jornadasActuales[index]._mozosEditados = true;
+    }
     // Sincronizar fecha del evento con la primera jornada
     if (campo === "fecha" && index === 0) {
       const dateEl = document.getElementById("date");
@@ -170,7 +187,7 @@ export function initJornadas({ mostrarAvisoSimple }) {
           </div>
           <div class="form-group jornada-invitados">
             <label>Invitados</label>
-            <input type="number" value="${j.invitados || ""}" onchange="window.actualizarJornada(${i}, 'invitados', this.value)">
+            <input type="number" value="${j.invitados || ""}" oninput="window.actualizarJornada(${i}, 'invitados', this.value)">
           </div>
         </div>
 
@@ -220,7 +237,7 @@ export function initJornadas({ mostrarAvisoSimple }) {
 
         <div class="jornada-acciones">
           <button type="button" onclick="window.abrirStaffJornada(${i})" class="btn-jornada-staff">
-            👥 Staff
+            🤵 Staff
             ${j.mensajesEnviados?.length > 0
         ? `<span class="jornada-staff-badge">${j.mensajesEnviados.length}</span>`
         : ""}
@@ -235,4 +252,5 @@ export function initJornadas({ mostrarAvisoSimple }) {
       </div>
     `).join("");
   };
+
 }

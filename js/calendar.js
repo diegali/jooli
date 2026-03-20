@@ -40,6 +40,20 @@ export function initCalendar() {
 
     // --- LÓGICA DE CLIC EN DÍA ---
     dateClick: function (info) {
+      if (window.editingId) {
+        const client = document.getElementById("client")?.value;
+        if (client) {
+          window.mostrarAvisoSimple(
+            "¿Salir sin guardar?",
+            `Estás editando el evento de <strong>${client}</strong>. Si salís perderás los cambios.<br><br>` +
+            `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'; window.resetFormConfirmado()" class="btn-aviso-confirmar">Salir sin guardar</button>
+         <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Volver a editar</button>`,
+            "⚠️", false
+          );
+          return;
+        }
+      }
+
       const selectedDate = info.dateStr;
       const eventsToday = (window.allEventsData || []).filter((e) => {
         if (e.date === selectedDate) return true;

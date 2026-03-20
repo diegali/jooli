@@ -78,7 +78,7 @@
     <nav class="main-nav">
       <button id="btn-calendar" class="nav-btn active" onclick="showSection('calendar')">📅 Calendario</button>
       <button id="btn-eventsList" class="nav-btn" onclick="showSection('eventsList')">📜 Lista</button>
-      <button id="btn-staffSection" class="nav-btn" onclick="showSection('staffSection')">👥 Staff</button>
+      <button id="btn-staffSection" class="nav-btn" onclick="showSection('staffSection')">🤵 Staff</button>
       <button id="btn-statsContainer" class="nav-btn" onclick="showSection('statsContainer')">📊 Stats</button>
     </nav>
 
@@ -293,7 +293,7 @@
         </div>
 
         <div class="form-group form-staff-buttons">
-          <button type="button" id="btnGestionarStaff" class="btn-form-staff">👤 Staff</button>
+          <button type="button" id="btnGestionarStaff" class="btn-form-staff">🤵 Staff</button>
           <button type="button" id="btnGestionarChecklist" class="btn-form-checklist">📦 Checklist</button>
         </div>
       </div>
@@ -320,7 +320,7 @@
 
     <div id="staffSection" style="display:none;">
       <div class="staff-section-inner">
-        <div class="staff-section-title">👥 Gestionar Staff</div>
+        <div class="staff-section-title">🤵 Gestionar Staff</div>
         <div class="staff-add-form">
           <div class="staff-add-grid">
             <input type="text" id="mozoNombre" placeholder="Nombre" class="staff-input">
@@ -367,6 +367,15 @@
       <div class="form-group hora-presentacion-group">
         <label>Hora de presentación</label>
         <input type="time" id="horaPresentacionEvento" class="hora-presentacion-input">
+      </div>
+      <div class="form-group hora-presentacion-group">
+        <label>Lugar de presentación <span style="font-weight:400; color:#999;">(opcional, si difiere del
+            evento)</span></label>
+        <div class="place-input-wrap">
+          <input type="text" id="lugarPresentacionEvento" class="hora-presentacion-input"
+            placeholder="Ej: Estación de tren, Plaza central...">
+          <button type="button" onclick="window.abrirModalMapsLugarPresentacion()" class="btn-ubicar">📍</button>
+        </div>
       </div>
 
       <div id="contenedorSeleccionStaff" class="seleccion-staff-panel">
@@ -439,7 +448,7 @@
       <div id="detalleContenido"></div>
       <div class="detalle-acciones">
         <button id="detalleEditarBtn" class="btn-detalle btn-detalle--editar"><span>✏️</span>Editar</button>
-        <button id="detalleStaffBtn" class="btn-detalle btn-detalle--staff"><span>👥</span>Staff</button>
+        <button id="detalleStaffBtn" class="btn-detalle btn-detalle--staff"><span>🤵</span>Staff</button>
         <button id="detalleChecklistBtn" class="btn-detalle btn-detalle--checklist"><span>📦</span>Checklist</button>
         <button id="detalleDuplicarBtn" class="btn-detalle btn-detalle--duplicar"><span>📋</span>Duplicar</button>
         <button id="detallePresupuestoBtn" class="btn-detalle btn-detalle--presupuesto"

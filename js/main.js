@@ -27,6 +27,20 @@ import {
 // SECCIONES Y UI
 // ===============================
 window.showSection = function (sectionId) {
+  // Si hay un evento en edición, advertir antes de cambiar de sección
+  if (window.editingId) {
+    const client = document.getElementById("client")?.value;
+    if (client) {
+      window.mostrarAvisoSimple(
+        "¿Salir sin guardar?",
+        `Estás editando el evento de <strong>${client}</strong>. Si salís perderás los cambios.<br><br>` +
+        `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'; window._pendingSectionChange='${sectionId}'; window.resetFormConfirmado(); window.showSection('${sectionId}')" class="btn-aviso-confirmar">Salir sin guardar</button>
+       <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Volver a editar</button>`,
+        "⚠️", false
+      );
+      return;
+    }
+  }
   const sections = ["calendar", "eventsList", "statsContainer", "staffSection"];
   const searchSection = document.getElementById("searchSection");
   const addEventContainer = document.getElementById("addEventContainer");
