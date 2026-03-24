@@ -294,7 +294,7 @@ export function registerEventDetailModal(deps) {
                     })()}
   ` : ""}
   ${evento.notes ? `📝 <em class="detail-notes">${evento.notes}</em><br>` : ""}
-  ${evento.presupuestoURL ? `📄 Presupuesto: <a href="${evento.presupuestoURL}" target="_blank" class="detail-maps-link">Ver</a><br>` : ""}
+  ${evento.presupuestoURL ? `📄 Presupuesto: <a href="${evento.presupuestoURL}" target="_blank" class="detail-maps-link">${evento.presupuestoNombre || "Ver"}</a><br>` : ""}
   ${evento.invoiceNumber ? `🧾 Factura: <strong>${evento.invoiceType || ""} ${evento.invoiceNumber}</strong>${evento.facturaURL ? ` <a href="${evento.facturaURL}" target="_blank" class="detail-maps-link">Ver</a>` : ""}<br>` : ""}
   ${alquileresDetalle}
   ${evento.esMultidia && evento.jornadas?.length > 0 ? `
@@ -442,7 +442,14 @@ export function registerEventDetailModal(deps) {
         if (staffBtn) staffBtn.style.display = "none";
         if (checklistBtn) checklistBtn.style.display = "none";
 
-        if (presupuestoBtn) presupuestoBtn.style.display = "none";
+        if (presupuestoBtn) {
+            presupuestoBtn.style.display = "";
+            presupuestoBtn.innerHTML = "<span>📄</span>Presupuesto";
+            presupuestoBtn.onclick = () => {
+                window.cerrarModalDetalle();
+                window.mostrarOpcionesPresupuesto(evento);
+            };
+        }
 
         document.getElementById("modalDetalleEvento").style.display = "flex";
     };

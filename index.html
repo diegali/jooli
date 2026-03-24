@@ -224,11 +224,13 @@
         <label>Presupuesto</label>
         <div class="adjunto-row">
           <div id="presupuestoInfo" class="presupuesto-info adjunto-info">No hay presupuesto adjunto.</div>
-          <button type="button" id="btnSubirPresupuesto" class="btn-adjunto">📎</button>
-          <button type="button" id="btnVerPresupuesto" class="btn-adjunto btn-adjunto--ver"
-            style="display:none;">👁</button>
+          <button type="button" id="btnGenerarPresupuestoForm" class="btn-adjunto"
+            title="Generar presupuesto">✏️</button>
+          <button type="button" id="btnSubirPresupuesto" class="btn-adjunto" title="Adjuntar archivo">📎</button>
+          <button type="button" id="btnVerPresupuesto" class="btn-adjunto btn-adjunto--ver" style="display:none;"
+            title="Ver presupuesto">👁</button>
           <button type="button" id="btnEliminarPresupuesto" class="btn-adjunto btn-adjunto--eliminar"
-            style="display:none;">🗑</button>
+            style="display:none;" title="Eliminar">🗑</button>
           <input type="file" id="presupuestoFile" accept=".pdf,image/*" class="presupuesto-file-input">
         </div>
       </div>
@@ -449,8 +451,9 @@
         <button id="detalleChecklistBtn" class="btn-detalle btn-detalle--checklist"><span>📦</span>Checklist</button>
         <button id="detalleDuplicarBtn" class="btn-detalle btn-detalle--duplicar"><span>📋</span>Duplicar</button>
         <button id="detalleEliminarBtn" class="btn-detalle btn-detalle--delete"><span>🗑</span>Eliminar</button>
-        <button id="detallePresupuestoBtn" class="btn-detalle btn-detalle--presupuesto"
-          style="display:none;"><span>📄</span>Presupuesto</button>
+        <button id="detallePresupuestoBtn" class="btn-detalle btn-detalle--presupuesto">
+          <span>📄</span>Presupuesto
+        </button>
       </div>
     </div>
   </div>
@@ -468,6 +471,114 @@
       <div class="map-actions">
         <button id="btnConfirmarUbicacion" class="btn-confirmar-ubicacion" onclick="window.confirmarUbicacion()">
           Confirmar ubicación
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="modalPresupuesto" class="modal-overlay" style="display:none;">
+    <div class="modal-box modal-box--presupuesto">
+      <div class="modal-checklist-header">
+        <h3 class="modal-checklist-title">📄 Presupuesto</h3>
+        <button onclick="window.cerrarModalPresupuesto()" class="btn-close-modal btn-close-modal--abs">✕</button>
+      </div>
+
+      <div class="presupuesto-form-scroll">
+
+        <div class="form-group">
+          <label>Señores (cliente)</label>
+          <input type="text" id="presSeñores">
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Lugar</label>
+            <input type="text" id="presLugar">
+          </div>
+          <div class="form-group">
+            <label>Fecha(s)</label>
+            <input type="text" id="presFecha">
+          </div>
+          <div class="form-group">
+            <label>Invitados</label>
+            <input type="text" id="presInvitados">
+          </div>
+          <div class="form-group">
+            <label>Horario</label>
+            <input type="text" id="presHorario">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Menú — Recepción</label>
+          <textarea id="presRecepcion" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Calentitos</label>
+          <textarea id="presCalentitos" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Primer plato</label>
+          <textarea id="presPrimerPlato" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Plato principal</label>
+          <textarea id="presPrincipal" rows="4"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Postre</label>
+          <textarea id="presPostre" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Bebidas</label>
+          <textarea id="presBebidas" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>El servicio incluye</label>
+          <textarea id="presServicio" rows="6"></textarea>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Tipo de precio</label>
+            <select id="presTipoPrecio">
+              <option value="persona">Por persona</option>
+              <option value="total">Total del evento</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Precio $</label>
+            <input type="number" id="presPrecio">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Observaciones</label>
+          <textarea id="presObservaciones" rows="3"></textarea>
+        </div>
+
+        <div class="form-submit-row">
+          <button onclick="window.generarPDFPresupuesto()" class="form-submit-btn">📄 Generar PDF</button>
+          <button onclick="window.cerrarModalPresupuesto()"
+            class="form-submit-btn form-submit-btn--cancel">Cancelar</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <div id="modalOpcionesPresupuesto" class="modal-overlay" style="display:none;">
+    <div class="modal-box" style="max-width:360px; padding:28px 24px; text-align:center;">
+      <h3 style="margin-bottom:20px; color:#1a1a2e;">📄 Presupuesto</h3>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <button onclick="window.elegirOpcionPresupuesto('generar')" class="form-submit-btn">
+          ✏️ Generar presupuesto
+        </button>
+        <button onclick="window.elegirOpcionPresupuesto('adjuntar')" class="form-submit-btn"
+          style="background:#2c3e50;">
+          📎 Adjuntar archivo
+        </button>
+        <input type="file" id="presupuestoFileDetalle" accept=".pdf,image/*" style="display:none;">
+        <button onclick="document.getElementById('modalOpcionesPresupuesto').style.display='none'"
+          class="form-submit-btn form-submit-btn--cancel">
+          Cancelar
         </button>
       </div>
     </div>
