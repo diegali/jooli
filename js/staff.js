@@ -43,6 +43,13 @@ function escapeHtml(texto) {
     .replaceAll("'", "&#039;");
 }
 
+function formatearDNI(dni) {
+  const limpio = String(dni).replace(/\D/g, "");
+  if (limpio.length === 7) return limpio.replace(/(\d{1})(\d{3})(\d{3})/, "$1.$2.$3");
+  if (limpio.length === 8) return limpio.replace(/(\d{2})(\d{3})(\d{3})/, "$1.$2.$3");
+  return dni;
+}
+
 function ordenarStaff(lista) {
   return [...lista].sort((a, b) => {
     const nombreA = normalizarNombreStaff(a).toLowerCase();
@@ -157,7 +164,7 @@ function renderStaffList(snapshot) {
         <div class="staff-avatar staff-avatar--pendiente">${inicial}</div>
         <div class="staff-list-info">
           <div class="staff-list-nombre">${escapeHtml(mozo.nombre)}</div>
-          <div class="staff-list-telefono">${escapeHtml(mozo.telefono)}${mozo.dni ? ` · DNI ${escapeHtml(mozo.dni)}` : ""}</div>
+          <div class="staff-list-telefono">${escapeHtml(mozo.telefono)}${mozo.dni ? ` · DNI ${escapeHtml(formatearDNI(mozo.dni))}` : ""}</div>
           <div class="staff-list-categoria">${escapeHtml(mozo.categoria || "Mozo")}</div>
         </div>
         <button onclick="window.verEventosMozo('${escapeHtml(mozo.nombre)}')" class="btn-staff-eventos">📅</button>
@@ -1100,7 +1107,7 @@ window.generarPDFStaff = function () {
     pdf.text(`${i + 1}`, 17, y);
     pdf.text(normalizarNombreStaff(m), 28, y);
 
-    const dni = typeof m === "object" ? (m.dni || "-") : "-";
+    const dni = typeof m === "object" ? formatearDNI(m.dni || "-") : "-";
     pdf.text(dni, 140, y);
 
     // Línea para firma
@@ -1196,7 +1203,7 @@ export function abrirModalPagos(eventoId) {
           <div class="pago-item" id="pago-item-${CSS.escape(nombre)}">
             <input type="checkbox" id="pagado-${CSS.escape(nombre)}"
               ${pago.pagado ? "checked" : ""}
-              onchange="window.actualizarEstiloPago('${nombre}')">
+              onchange="window.actualizarEstiloPago('${nombre}'); window.recalcularTotalPagos()">
             <span class="pago-item-nombre ${pago.pagado ? "pago-item-nombre--pagado" : ""}"
               id="pago-nombre-${CSS.escape(nombre)}">${nombre}</span>
             <input type="number" min="0" placeholder="$0"
@@ -1235,12 +1242,34 @@ window.aplicarMontoFijo = function () {
 };
 
 function recalcularTotalPagos() {
-  const inputs = document.querySelectorAll(".pago-item input[type='number']");
-  let total = 0;
-  inputs.forEach(input => { total += Number(input.value) || 0; });
+  const items = document.querySelectorAll(".pago-item");
+  let totalPagado = 0;
+  let totalGeneral = 0;
+
+  items.forEach(item => {
+    const checkbox = item.querySelector("input[type='checkbox']");
+    const monto = Number(item.querySelector("input[type='number']")?.value) || 0;
+    totalGeneral += monto;
+    if (checkbox?.checked) totalPagado += monto;
+  });
+
   const totalEl = document.getElementById("pagosTotal");
-  if (totalEl) totalEl.textContent = `Total: $${total.toLocaleString("es-AR")}`;
+  if (totalEl) totalEl.textContent = `Total: $${totalGeneral.toLocaleString("es-AR")}`;
+
+  const caja = Number(document.getElementById("pagosCajaChica")?.value) || 0;
+  const saldoEl = document.getElementById("pagosSaldo");
+  if (saldoEl) {
+    if (caja === 0) {
+      saldoEl.textContent = "-";
+      saldoEl.className = "pagos-saldo";
+    } else {
+      const saldo = caja - totalPagado;
+      saldoEl.textContent = `$${saldo.toLocaleString("es-AR")}`;
+      saldoEl.className = "pagos-saldo " + (saldo >= 0 ? "pagos-saldo--ok" : "pagos-saldo--negativo");
+    }
+  }
 }
+
 window.recalcularTotalPagos = recalcularTotalPagos;
 
 window.guardarPagos = async function () {

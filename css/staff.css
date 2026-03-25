@@ -698,3 +698,45 @@
   padding: 0 20px;
   font-size: 0.9rem;
 }
+
+.pagos-caja {
+  border-top: 1px solid var(--border, #eee);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pagos-caja-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.pagos-caja-row label {
+  color: var(--text-secondary, #888);
+  font-size: 0.85rem;
+}
+
+.pagos-caja-row input {
+  width: 110px;
+  padding: 6px 8px;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.pagos-saldo {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.pagos-saldo--ok {
+  color: #27ae60;
+}
+
+.pagos-saldo--negativo {
+  color: #c0392b;
+}

@@ -1,5 +1,14 @@
 // js/events/events-form.js
-import { actualizarUIFactura, actualizarUIAlquiler } from "./events-budget.js";
+document.getElementById("cuit")?.addEventListener("input", function () {
+    const limpio = this.value.replace(/\D/g, "").slice(0, 11);
+    if (limpio.length <= 2) {
+        this.value = limpio;
+    } else if (limpio.length <= 10) {
+        this.value = limpio.slice(0, 2) + "-" + limpio.slice(2);
+    } else {
+        this.value = limpio.slice(0, 2) + "-" + limpio.slice(2, 10) + "-" + limpio.slice(10);
+    }
+});
 
 export function resetForm({ setEditingId, actualizarUIBudget }) {
     setEditingId(null);

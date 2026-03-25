@@ -104,6 +104,9 @@ function createCard(evento, id) {
     const checklist = evento.checklist || [];
     const checklistCompleto = checklist.length > 0 && checklist.every(item => item.preparado);
     const checklistVacio = checklist.length === 0;
+    const checklistPreparados = checklist.filter(item => item.preparado).length;
+    const checklistTotal = checklist.length;
+    const checklistColor = checklistCompleto ? '#27ae60' : checklistPreparados === 0 ? '#c0392b' : '#e67e22';
     const multidiaBadge = evento.esMultidia && evento.jornadas?.length > 0
         ? `<span class="badge-multidia">📅 ${evento.jornadas.length} jornadas</span>`
         : "";
@@ -128,8 +131,6 @@ function createCard(evento, id) {
             <div class="${statusClass}">${evento.status || "-"}</div>
             ${pagadoBadge}
             ${multidiaBadge}
-            ${checklistCompleto ? `<span class="badge-checklist-ok">✔ Lista</span>` : ""}
-            ${!checklistVacio && !checklistCompleto ? `<span class="badge-checklist-pendiente">📦 Pendiente</span>` : ""}
         </div>
       </div>
       <div class="event-card__body">
@@ -173,6 +174,9 @@ function createCard(evento, id) {
     🤵 ${confirmados} conf. · ${pendientes} pend.${faltan > 0 ? ` · ${faltan} faltan` : " · completo"}
   </div>`;
         })()}
+    ${!checklistVacio ? `<div class="event-card__staff-resumen" style="color:${checklistColor};">
+    📦 ${checklistPreparados}/${checklistTotal} ítems preparados
+  </div>` : ""}
     </div>
   `;
 }

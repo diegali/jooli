@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JOOLI Agenda</title>
+  <title>JOOLI CateringDesk</title>
 
   <link rel="stylesheet" href="./css/base.css?v=4.0" />
   <link rel="stylesheet" href="./css/layout.css?v=4.0" />
@@ -266,7 +266,7 @@
 
         <div class="jornada-row-lugar">
           <div class="form-group jornada-mozos">
-            <label>Mozos</label><input type="number" id="staffNecesario" />
+            <label>Personal</label><input type="number" id="staffNecesario" />
           </div>
           <div class="form-group jornada-lugar">
             <label>Lugar</label>
@@ -387,7 +387,7 @@
       </div>
 
       <div id="contenedorSeleccionStaff" class="seleccion-staff-panel">
-        <h4 class="seleccion-staff-title">Seleccioná los mozos:</h4>
+        <h4 class="seleccion-staff-title">Seleccioná el personal:</h4>
         <div id="listadoCheckboxesCompleto" class="listado-checkboxes"></div>
         <button id="btnConfirmarAsignacion" class="btn-confirmar-asignacion">Confirmar y Convocar</button>
       </div>
@@ -612,6 +612,17 @@
       </div>
 
       <div id="pagosLista" class="pagos-lista"></div>
+
+      <div class="pagos-caja">
+        <div class="pagos-caja-row">
+          <label>Dinero disponible</label>
+          <input type="number" id="pagosCajaChica" min="0" placeholder="$0" oninput="window.recalcularTotalPagos()" />
+        </div>
+        <div class="pagos-caja-row">
+          <span>Saldo restante</span>
+          <span id="pagosSaldo" class="pagos-saldo">-</span>
+        </div>
+      </div>
 
       <div class="pagos-footer">
         <div id="pagosTotal" class="pagos-total">Total: $0</div>

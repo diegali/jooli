@@ -102,18 +102,18 @@ export function initCalendar() {
         }
       }
 
-      // Preparamos el formulario para un nuevo evento
-      const showFormBtn = document.getElementById("showFormBtn");
-      if (showFormBtn) showFormBtn.click();
-
-      const dateInput = document.getElementById("date");
-      if (dateInput) dateInput.value = selectedDate;
-
-      // Hacemos scroll suave hasta el resumen/formulario
-      document
-        .getElementById("eventFormContainer")
-        ?.scrollIntoView({ behavior: "smooth" });
+      // Preguntamos antes de abrir el formulario
+      const fechaFormateada = selectedDate.split("-").reverse().join("/");
+      window.mostrarAvisoSimple(
+        "Nuevo evento",
+        `¿Querés crear un evento para el <strong>${fechaFormateada}</strong>?<br><br>` +
+        `<button onclick="document.getElementById('modalAvisoSimple').style.display='none'; window._abrirFormNuevoEvento('${selectedDate}')" class="btn-aviso-confirmar">Sí, crear</button>
+         <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
+        "📅", false
+      );
     },
+
+
 
     eventClick: function (info) {
       const id = info.event.extendedProps._eventoId || info.event.id;
@@ -130,6 +130,21 @@ export function initCalendar() {
     calendar.updateSize();
   }, 500);
 }
+
+window._abrirFormNuevoEvento = function (selectedDate) {
+  const showFormBtn = document.getElementById("showFormBtn");
+  if (showFormBtn) showFormBtn.click();
+
+  const dateInput = document.getElementById("date");
+  if (dateInput) {
+    dateInput.value = selectedDate;
+    window.mostrarNombreDia(selectedDate);
+  }
+
+  document
+    .getElementById("eventFormContainer")
+    ?.scrollIntoView({ behavior: "smooth" });
+};
 
 export function refreshCalendar() {
   if (calendar) calendar.updateSize();
