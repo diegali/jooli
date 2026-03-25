@@ -24,7 +24,6 @@
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#d4af37" />
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales-all.global.min.js"></script>
 </head>
 
 <body>
@@ -101,6 +100,10 @@
           <button type="button" class="filtro-estado" data-estado="Cancelado">Cancelado</button>
           <button type="button" class="filtro-estado" data-estado="Cerrado">Cerrado</button>
         </div>
+      </div>
+      <div class="filtros-mes-wrap" id="filtrosMesWrap" style="display:none;">
+        <div class="filtros-estado-label">Mes</div>
+        <div class="filtros-estado-scroll" id="filtrosMesScroll"></div>
       </div>
     </div>
 
@@ -630,6 +633,14 @@
       </div>
     </div>
   </div>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js")
+          .catch(err => console.warn("SW error:", err));
+      });
+    }
+  </script>
 </body>
 
 </html>

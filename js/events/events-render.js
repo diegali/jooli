@@ -92,6 +92,17 @@ function createCard(evento, id) {
     const today = new Date().toISOString().split("T")[0];
     const esHoy = evento.date === today;
 
+    const fechaRef = evento.esMultidia ? (evento.jornadas?.[0]?.fecha || "") : (evento.date || "");
+    const esFuturo = fechaRef >= today;
+    let countdownBadge = "";
+    if (esFuturo) {
+        const diff = Math.round((new Date(fechaRef + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000);
+        if (diff === 0) countdownBadge = `<span class="badge-countdown badge-countdown--hoy">HOY</span>`;
+        else if (diff === 1) countdownBadge = `<span class="badge-countdown badge-countdown--manana">mañana</span>`;
+        else if (diff <= 7) countdownBadge = `<span class="badge-countdown badge-countdown--pronto">en ${diff} días</span>`;
+        else countdownBadge = `<span class="badge-countdown">en ${diff} días</span>`;
+    }
+
     const statusClass = `status-badge status-badge--${(evento.status || "").replace(" ", "-")}`;
 
     const pagadoBadge = (evento.paid === true && evento.date < today)
@@ -120,7 +131,7 @@ function createCard(evento, id) {
         : "";
 
     return `
-    <div onclick="window.abrirModalDetalle('${id}')" class="event-card ${esHoy ? "event-card--hoy" : ""}" data-cliente="${(evento.client || "").toLowerCase()}">
+    <div onclick="window.abrirModalDetalle('${id}')" class="event-card ${esHoy ? "event-card--hoy" : ""}" data-cliente="${(evento.client || "").toLowerCase()}" data-mes="${(evento.esMultidia ? (evento.jornadas?.[0]?.fecha || "") : (evento.date || "")).slice(0, 7)}">
       <div class="event-card__header">
         <div>
           <div class="event-card__fecha">${formatDate(evento.date)}</div>
@@ -128,6 +139,7 @@ function createCard(evento, id) {
           <div class="event-card__tipo">${evento.type || "-"}</div>
         </div>
         <div class="event-card__badges">
+            ${countdownBadge}
             <div class="${statusClass}">${evento.status || "-"}</div>
             ${pagadoBadge}
             ${multidiaBadge}
@@ -241,126 +253,184 @@ export function registerEventDetailModal(deps) {
         const contenido = document.getElementById("detalleContenido");
         if (contenido) {
             contenido.innerHTML = `
-              <div class="detail-header">
-                <div class="detail-header__top">
-                  <div class="detail-fecha">${formatDate(evento.date)}</div>
-                  <span class="status-badge status-badge--${(evento.status || "").replace(" ", "-")}">${evento.status}</span>
-                </div>
-                <div class="detail-cliente">${evento.client}</div>
-                <div class="detail-tipo">${evento.esMultidia && evento.jornadas?.length > 0
+          <div class="detail-header">
+            <div class="detail-header__top">
+              <div class="detail-fecha">${formatDate(evento.date)}</div>
+              <span class="status-badge status-badge--${(evento.status || "").replace(" ", "-")}">${evento.status}</span>
+            </div>
+            <div class="detail-cliente">${evento.client}</div>
+            <div class="detail-tipo">${evento.esMultidia && evento.jornadas?.length > 0
                     ? [...new Set(evento.jornadas.map(j => j.tipo).filter(Boolean))].join(" · ")
                     : evento.type || "-"
                 }</div>
-              </div>
+          </div>
 
-              <div class="detail-row">
-  ${!evento.esMultidia ? `
-    📍 <strong>${evento.place || "-"}</strong>${evento.placeUrl ? ` <a href="${evento.placeUrl}" target="_blank" class="detail-maps-link">Ver en Maps</a>` : ""}<br>
-    👥 <strong>${evento.guests || "-"}</strong> personas<br>
-    🕒 Evento: <strong>${evento.horaInicio || "-"}</strong> a <strong>${evento.horaFin || "-"}</strong><br>
-    👔 Presentación: <strong>${evento.horaPresentacion || "-"}</strong><br>
-  ` : ""}
-  💰 Total: <strong>$${Number(evento.total || 0).toLocaleString()}</strong>
-  ${evento.paid ? `<span class="detail-cobrado-badge">COBRADO</span>` : ""}<br>
-  💵 Seña: <strong>$${Number(evento.deposit || 0).toLocaleString()}</strong><br>
-  ${!evento.esMultidia ? `
-    <div class="detail-inline-accion">
-      <div>
-        🤵 <span class="${staffColorClass}">${textoStaff}</span>
-        <span class="detail-staff-conteo"> · ✔ ${confirmados} · ⏳ ${pendientes} · ❌ ${rechazados}</span>
-      </div>
-      <button onclick="window.abrirModalGestionStaff('${eventoId}')" class="btn-detail-inline">Gestionar</button>
-    </div>
-    ${(() => {
+          <div class="detail-row">
+
+            ${!evento.esMultidia ? `
+            <div class="detail-bloque">
+              <div class="detail-bloque-fila">
+                <span class="detail-bloque-icono">📍</span>
+                <span class="detail-bloque-texto">
+                  <strong>${evento.place || "-"}</strong>
+                  ${evento.placeUrl ? `<a href="${evento.placeUrl}" target="_blank" class="detail-maps-link"> Ver en Maps</a>` : ""}
+                </span>
+              </div>
+              <div class="detail-bloque-fila">
+                <span class="detail-bloque-icono">👥</span>
+                <span class="detail-bloque-texto"><strong>${evento.guests || "-"}</strong> personas</span>
+              </div>
+              <div class="detail-bloque-fila">
+                <span class="detail-bloque-icono">🕒</span>
+                <span class="detail-bloque-texto">Evento: <strong>${evento.horaInicio || "-"}</strong> a <strong>${evento.horaFin || "-"}</strong></span>
+              </div>
+              <div class="detail-bloque-fila">
+                <span class="detail-bloque-icono">👔</span>
+                <span class="detail-bloque-texto">Presentación: <strong>${evento.horaPresentacion || "-"}</strong></span>
+              </div>
+            </div>
+            ` : ""}
+
+            <div class="detail-bloque">
+              <div class="detail-bloque-fila">
+                <span class="detail-bloque-icono">💰</span>
+                <span class="detail-bloque-texto">Total: <strong>$${Number(evento.total || 0).toLocaleString()}</strong>
+                  ${evento.paid ? `<span class="detail-cobrado-badge">COBRADO</span>` : ""}
+                </span>
+              </div>
+              <div class="detail-bloque-fila">
+                <span class="detail-bloque-icono">💵</span>
+                <span class="detail-bloque-texto">Seña: <strong>$${Number(evento.deposit || 0).toLocaleString()}</strong></span>
+              </div>
+              ${evento.invoiceNumber ? `
+              <div class="detail-bloque-fila">
+                <span class="detail-bloque-icono">🧾</span>
+                <span class="detail-bloque-texto">Factura: <strong>${evento.invoiceType || ""} ${evento.invoiceNumber}</strong>
+                  ${evento.facturaURL ? `<a href="${evento.facturaURL}" target="_blank" class="detail-maps-link"> Ver</a>` : ""}
+                </span>
+              </div>` : ""}
+              ${evento.presupuestoURL ? `
+              <div class="detail-bloque-fila">
+                <span class="detail-bloque-icono">📄</span>
+                <span class="detail-bloque-texto"><a href="${evento.presupuestoURL}" target="_blank" class="detail-maps-link">Ver presupuesto</a></span>
+              </div>` : ""}
+            </div>
+
+            ${!evento.esMultidia ? `
+            <div class="detail-bloque">
+              <div class="detail-inline-accion">
+                <div>
+                  🤵 <span class="${staffColorClass}">${textoStaff}</span>
+                  <span class="detail-staff-conteo"> · ✔ ${confirmados} · ⏳ ${pendientes} · ❌ ${rechazados}</span>
+                </div>
+                <button onclick="window.abrirModalGestionStaff('${eventoId}')" class="btn-detail-inline">Gestionar</button>
+              </div>
+              ${(() => {
                         const checklist = evento.checklist || [];
                         const total = checklist.length;
                         const preparados = checklist.filter(c => c.preparado).length;
                         if (total === 0) return `
-        <div class="detail-inline-accion">
-          <div>📦 Sin checklist armado</div>
-          <button onclick="window.cerrarModalDetalle(); window.abrirModalChecklist('${eventoId}')" class="btn-detail-inline">Armar</button>
-        </div>`;
+                  <div class="detail-inline-accion">
+                    <div>📦 Sin checklist armado</div>
+                    <button onclick="window.cerrarModalDetalle(); window.abrirModalChecklist('${eventoId}')" class="btn-detail-inline">Armar</button>
+                  </div>`;
                         const color = preparados === total ? "#27ae60" : preparados === 0 ? "#c0392b" : "#e67e22";
                         return `
-        <div class="detail-inline-accion">
-          <div>📦 <span style="color:${color}; font-weight:600;">${preparados}/${total} ítems preparados</span></div>
-          <button onclick="window.abrirModalChecklist('${eventoId}')" class="btn-detail-inline">Ver</button>
-        </div>`;
+                  <div class="detail-inline-accion">
+                    <div>📦 <span style="color:${color}; font-weight:600;">${preparados}/${total} ítems preparados</span></div>
+                    <button onclick="window.abrirModalChecklist('${eventoId}')" class="btn-detail-inline">Ver</button>
+                  </div>`;
                     })()}
-  ` : ""}
-  
-  ${evento.notes ? `📝 <em class="detail-notes">${evento.notes}</em><br>` : ""}
-  ${evento.presupuestoURL ? `📄 Presupuesto: <a href="${evento.presupuestoURL}" target="_blank" class="detail-maps-link">${evento.presupuestoNombre || "Ver"}</a><br>` : ""}
-  ${evento.invoiceNumber ? `🧾 Factura: <strong>${evento.invoiceType || ""} ${evento.invoiceNumber}</strong>${evento.facturaURL ? ` <a href="${evento.facturaURL}" target="_blank" class="detail-maps-link">Ver</a>` : ""}<br>` : ""}
-  ${alquileresDetalle}
-  ${evento.esMultidia && evento.jornadas?.length > 0 ? `
-    <div class="detail-jornadas">
-      <div class="detail-jornadas-titulo">📅 Jornadas</div>
-      ${evento.jornadas.map((j, i) => {
+            </div>
+            ` : ""}
+
+            ${evento.notes ? `
+            <div class="detail-bloque">
+              <div class="detail-bloque-fila">
+                <span class="detail-bloque-icono">📝</span>
+                <span class="detail-bloque-texto"><em>${evento.notes}</em></span>
+              </div>
+            </div>` : ""}
+
+            ${evento.alquileres && Object.values(evento.alquileres).some(v => v === true) ? `
+            <div class="detail-bloque">
+              <div class="detail-bloque-fila">
+                <span class="detail-bloque-icono">🪑</span>
+                <span class="detail-bloque-texto">${[
+                        evento.alquileres.vajilla ? "Vajilla" : null,
+                        evento.alquileres.manteleria ? "Mantelería" : null,
+                        evento.alquileres.mobiliario ? "Mobiliario" : null,
+                        evento.alquileres.mobiliarioTrabajo ? "Mob. trabajo" : null,
+                    ].filter(Boolean).join(" · ")}</span>
+              </div>
+              ${evento.alquileres.notas ? `
+              <div class="detail-bloque-fila">
+                <span class="detail-bloque-icono"> </span>
+                <span class="detail-bloque-texto detail-notas-alquiler">${evento.alquileres.notas}</span>
+              </div>` : ""}
+            </div>` : ""}
+
+            ${evento.esMultidia && evento.jornadas?.length > 0 ? `
+            <div class="detail-jornadas">
+              <div class="detail-jornadas-titulo">📅 Jornadas</div>
+              ${evento.jornadas.map((j, i) => {
                         const fecha = j.fecha ? new Date(j.fecha + "T00:00:00").toLocaleDateString("es-AR") : `Jornada ${i + 1}`;
                         const totalCheck = j.checklist?.length || 0;
                         const preparados = j.checklist?.filter(c => c.preparado).length || 0;
                         const staffAsig = j.mensajesEnviados?.length || 0;
-                        const confirmados = j.mensajesEnviados?.filter(m => m.estado === "confirmado").length || 0;
+                        const confirmadosJ = j.mensajesEnviados?.filter(m => m.estado === "confirmado").length || 0;
+                        const pendientesJ = j.mensajesEnviados?.filter(m => m.estado === "pendiente").length || 0;
+                        const rechazadosJ = j.mensajesEnviados?.filter(m => m.estado === "rechazado").length || 0;
+                        const necesario = Number(j.staffNecesario || 0);
+                        const activos = confirmadosJ + pendientesJ;
+                        const faltan = Math.max(necesario - activos, 0);
+                        let textoJ = "Sin staff asignado";
+                        let colorJ = "detail-staff-danger";
+                        if (activos > 0 && faltan === 0) { textoJ = "Staff completo ✔"; colorJ = "detail-staff-ok"; }
+                        else if (activos > 0) { textoJ = `Faltan ${faltan} staff`; colorJ = "detail-staff-warning"; }
                         return `
-          <div class="detail-jornada-item">
-            <div class="detail-jornada-fecha">${fecha}</div>
-            <div class="detail-jornada-info">
-              🍽 ${j.tipo || "-"}<br>
-              📍 ${j.lugar || "-"}<br>
-              ${j.invitados ? `👥 <strong>${j.invitados}</strong> personas<br>` : ""}
-              🕒 ${j.horaInicio || "-"} a ${j.horaFin || "-"}
-              ${j.horaPresentacion ? `<br>👔 Presentación: ${j.horaPresentacion}` : ""}
-              <div class="detail-inline-accion">
-  <div>
-    ${(() => {
-                                const necesario = Number(j.staffNecesario || 0);
-                                const pendientesJ = j.mensajesEnviados?.filter(m => m.estado === "pendiente").length || 0;
-                                const rechazadosJ = j.mensajesEnviados?.filter(m => m.estado === "rechazado").length || 0;
-                                const activos = confirmados + pendientesJ;
-                                const faltan = Math.max(necesario - activos, 0);
-                                let textoJ = "Sin staff asignado";
-                                let colorJ = "detail-staff-danger";
-                                if (activos > 0 && faltan === 0) { textoJ = "Staff completo ✔"; colorJ = "detail-staff-ok"; }
-                                else if (activos > 0 && faltan === 1) { textoJ = "Falta 1 staff"; colorJ = "detail-staff-warning"; }
-                                else if (activos > 0) { textoJ = `Faltan ${faltan} staff`; colorJ = "detail-staff-warning"; }
-                                return staffAsig > 0 || necesario > 0
-                                    ? `🤵 <span class="${colorJ}">${textoJ}</span> <span class="detail-staff-conteo">· ✔ ${confirmados} · ⏳ ${pendientesJ} · ❌ ${rechazadosJ}</span>`
-                                    : "🤵 Sin staff asignado";
-                            })()}
-  </div>
-  <button onclick="window._modoStaffJornada=true; document.getElementById('modalGestionStaff').dataset.jornadaIdx=${i}; window.abrirModalGestionStaff('${eventoId}')" class="btn-detail-inline">Gestionar</button>
-</div>
-<div class="detail-inline-accion">
-  <div>
-    ${(() => {
+                <div class="detail-jornada-item">
+                  <div class="detail-jornada-fecha">${fecha}</div>
+                  <div class="detail-jornada-info">
+                    <div class="detail-bloque">
+                      <div class="detail-bloque-fila"><span class="detail-bloque-icono">🍽</span><span class="detail-bloque-texto">${j.tipo || "-"}</span></div>
+                      <div class="detail-bloque-fila"><span class="detail-bloque-icono">📍</span><span class="detail-bloque-texto"><strong>${j.lugar || "-"}</strong></span></div>
+                      ${j.invitados ? `<div class="detail-bloque-fila"><span class="detail-bloque-icono">👥</span><span class="detail-bloque-texto"><strong>${j.invitados}</strong> personas</span></div>` : ""}
+                      <div class="detail-bloque-fila"><span class="detail-bloque-icono">🕒</span><span class="detail-bloque-texto">${j.horaInicio || "-"} a ${j.horaFin || "-"}</span></div>
+                      ${j.horaPresentacion ? `<div class="detail-bloque-fila"><span class="detail-bloque-icono">👔</span><span class="detail-bloque-texto">Presentación: ${j.horaPresentacion}</span></div>` : ""}
+                    </div>
+                    <div class="detail-inline-accion">
+                      <div>🤵 <span class="${colorJ}">${textoJ}</span> <span class="detail-staff-conteo">· ✔ ${confirmadosJ} · ⏳ ${pendientesJ} · ❌ ${rechazadosJ}</span></div>
+                      <button onclick="window._modoStaffJornada=true; document.getElementById('modalGestionStaff').dataset.jornadaIdx=${i}; window.abrirModalGestionStaff('${eventoId}')" class="btn-detail-inline">Gestionar</button>
+                    </div>
+                    <div class="detail-inline-accion">
+                      <div>${(() => {
                                 const total = j.checklist?.length || 0;
-                                const preparados = j.checklist?.filter(c => c.preparado).length || 0;
+                                const prep = j.checklist?.filter(c => c.preparado).length || 0;
                                 if (total === 0) return "📦 Sin checklist armado";
-                                const color = preparados === total ? "#27ae60" : preparados === 0 ? "#c0392b" : "#e67e22";
-                                return `📦 <span style="color:${color}; font-weight:600;">${preparados}/${total} ítems preparados</span>`;
-                            })()}
-  </div>
-  <button onclick="window.abrirChecklistJornada(${i}, '${eventoId}')" class="btn-detail-inline">Ver</button>
-</div>
-                                   ${j.alquileres && Object.values(j.alquileres).some(v => v === true) ? `
-  <br>🪑 <span class="event-card__alquileres">Alquileres: ${[
+                                const col = prep === total ? "#27ae60" : prep === 0 ? "#c0392b" : "#e67e22";
+                                return `📦 <span style="color:${col}; font-weight:600;">${prep}/${total} ítems preparados</span>`;
+                            })()}</div>
+                      <button onclick="window.abrirChecklistJornada(${i}, '${eventoId}')" class="btn-detail-inline">Ver</button>
+                    </div>
+                    ${j.alquileres && Object.values(j.alquileres).some(v => v === true) ? `
+                    <div class="detail-bloque" style="margin-top:4px;">
+                      <div class="detail-bloque-fila"><span class="detail-bloque-icono">🪑</span><span class="detail-bloque-texto">${[
                                     j.alquileres.vajilla ? "Vajilla" : null,
                                     j.alquileres.manteleria ? "Mantelería" : null,
                                     j.alquileres.mobiliario ? "Mobiliario" : null,
                                     j.alquileres.mobiliarioTrabajo ? "Mob. trabajo" : null,
-                                ].filter(Boolean).join(" · ")}</span>
-  ${j.alquileres.notas ? `<br><span class="detail-notas-alquiler">📋 ${j.alquileres.notas}</span>` : ""}
-` : ""}
-              ${j.notas ? `<br>📝 <em>${j.notas}</em>` : ""}
-            </div>
+                                ].filter(Boolean).join(" · ")}</span></div>
+                      ${j.alquileres.notas ? `<div class="detail-bloque-fila"><span class="detail-bloque-icono"> </span><span class="detail-notas-alquiler">${j.alquileres.notas}</span></div>` : ""}
+                    </div>` : ""}
+                    ${j.notas ? `<div class="detail-bloque" style="margin-top:4px;"><div class="detail-bloque-fila"><span class="detail-bloque-icono">📝</span><span class="detail-bloque-texto"><em>${j.notas}</em></span></div></div>` : ""}
+                  </div>
+                </div>`;
+                    }).join("")}
+            </div>` : ""}
+
           </div>
         `;
-                    }).join("")}
-    </div>
-  ` : ""}
-</div>
-            `;
         }
 
         const eventoPasado = evento.date < new Date().toISOString().split("T")[0];

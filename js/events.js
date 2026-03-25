@@ -53,6 +53,46 @@ function resetEventForm() {
 // ===============================
 // RENDER
 // ===============================
+
+function actualizarFiltrosMes(events) {
+  const wrap = document.getElementById("filtrosMesWrap");
+  const scroll = document.getElementById("filtrosMesScroll");
+  if (!wrap || !scroll) return;
+
+  const today = new Date().toISOString().split("T")[0];
+  const mesesSet = new Set();
+
+  events.forEach((e) => {
+    const fecha = e.esMultidia ? (e.jornadas?.[0]?.fecha || "") : (e.date || "");
+    if (!fecha) return;
+    const esPasado = fecha < today;
+    const esCerrado = esPasado && e.paid === true;
+    if (esCerrado) return; // los cerrados no aparecen en filtros normales
+    const key = fecha.slice(0, 7); // "2026-04"
+    mesesSet.add(key);
+  });
+
+  const meses = Array.from(mesesSet).sort();
+  if (meses.length <= 1) { wrap.style.display = "none"; return; }
+
+  wrap.style.display = "";
+
+  const mesActivo = document.querySelector(".filtro-mes.active")?.dataset.mes || "";
+
+  scroll.innerHTML = "";
+  meses.forEach((key) => {
+    const [anio, mes] = key.split("-");
+    const label = new Date(Number(anio), Number(mes) - 1, 1)
+      .toLocaleDateString("es-AR", { month: "long", year: "numeric" });
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "filtro-mes" + (mesActivo === key ? " active" : "");
+    btn.dataset.mes = key;
+    btn.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+    scroll.appendChild(btn);
+  });
+}
+
 function rerenderEvents() {
   renderFilteredEvents(window.allEventsData || [], {
     updateStats,
@@ -60,9 +100,12 @@ function rerenderEvents() {
   });
 
   const term = document.getElementById("searchInput")?.value.toLowerCase().trim();
+  const mesActivo = document.querySelector(".filtro-mes.active")?.dataset.mes || "";
 
   document.querySelectorAll(".event-card").forEach((card) => {
-    card.style.display = !term || (card.dataset.cliente || "").includes(term) ? "" : "none";
+    const coincideCliente = !term || (card.dataset.cliente || "").includes(term);
+    const coincideMes = !mesActivo || (card.dataset.mes || "") === mesActivo;
+    card.style.display = coincideCliente && coincideMes ? "" : "none";
   });
 
   setTimeout(() => {
@@ -270,6 +313,7 @@ function loadEvents(avisos) {
       avisos.verificarAvisosPendientes(window.allEventsData);
     }
 
+    actualizarFiltrosMes(window.allEventsData);
     rerenderEvents();
   });
 }
@@ -428,7 +472,10 @@ export function initEvents() {
   document.getElementById("cancelFormBtn")?.addEventListener("click", () => {
     const client = document.getElementById("client")?.value;
     const date = document.getElementById("date")?.value;
-    if (client || date) {
+    const place = document.getElementById("place")?.value;
+    const notes = document.getElementById("notes")?.value;
+    const hayDatos = client || date || place || notes;
+    if (hayDatos) {
       mostrarAvisoSimple(
         "¿Cancelar?",
         "Tenés datos cargados. ¿Seguro que querés cancelar?<br><br>" +
@@ -440,8 +487,25 @@ export function initEvents() {
       resetEventForm();
     }
   });
-
   document.getElementById("showFormBtn")?.addEventListener("click", () => {
+    const client = document.getElementById("client")?.value;
+    const date = document.getElementById("date")?.value;
+    const place = document.getElementById("place")?.value;
+    const notes = document.getElementById("notes")?.value;
+    const formVisible = document.getElementById("eventFormContainer")?.style.display !== "none";
+    const hayDatos = client || date || place || notes;
+
+    if (formVisible && hayDatos) {
+      mostrarAvisoSimple(
+        "¿Descartar cambios?",
+        "Tenés datos cargados en el formulario. ¿Querés descartarlos y empezar uno nuevo?<br><br>" +
+        `<button onclick="window.resetFormConfirmado()" class="btn-aviso-confirmar">Sí, descartar</button>
+         <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Volver</button>`,
+        "⚠️", false
+      );
+      return;
+    }
+
     resetEventForm();
     const form = document.getElementById("eventFormContainer");
     if (form) { form.style.display = "block"; form.scrollIntoView({ behavior: "smooth" }); }
@@ -486,11 +550,21 @@ export function initEvents() {
   });
 
   document.getElementById("filtrosEventos")?.addEventListener("click", (e) => {
-    const btn = e.target.closest(".filtro-estado");
-    if (!btn) return;
-    document.querySelectorAll(".filtro-estado").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    rerenderEvents();
+    const btnEstado = e.target.closest(".filtro-estado");
+    if (btnEstado) {
+      document.querySelectorAll(".filtro-estado").forEach(b => b.classList.remove("active"));
+      btnEstado.classList.add("active");
+      rerenderEvents();
+      return;
+    }
+
+    const btnMes = e.target.closest(".filtro-mes");
+    if (btnMes) {
+      const yaActivo = btnMes.classList.contains("active");
+      document.querySelectorAll(".filtro-mes").forEach(b => b.classList.remove("active"));
+      if (!yaActivo) btnMes.classList.add("active");
+      rerenderEvents();
+    }
   });
 
   // Presupuesto
