@@ -161,7 +161,6 @@ function loadCalendarEvents() {
       const e = d.data();
       const colors = {
         Presupuestado: "#f1c40f",
-        "Seña pagada": "#e67e22",
         Confirmado: "#27ae60",
         Realizado: "#2980b9",
         Cancelado: "#c0392b",

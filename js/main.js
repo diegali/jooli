@@ -1,3 +1,4 @@
+import "./ui.js";
 import { initEvents } from "./events.js";
 import { mostrarNombreDia } from "./events/events-form.js";
 import { initCalendar } from "./calendar.js";

@@ -1,6 +1,6 @@
 // js/events/events-jornadas.js
 
-export function initJornadas({ mostrarAvisoSimple }) {
+export function initJornadas() {
 
   window.toggleMultidia = function () {
     const checked = document.getElementById("esMultidia")?.checked;
@@ -81,7 +81,7 @@ export function initJornadas({ mostrarAvisoSimple }) {
       const fechaEvento = document.getElementById("date")?.value;
 
       if (fechaEvento && valor < fechaEvento) {
-        mostrarAvisoSimple(
+        window.mostrarAvisoSimple(
           "Fecha inválida",
           "La fecha de la jornada no puede ser anterior a la fecha del evento.",
           "⚠️"
@@ -93,7 +93,7 @@ export function initJornadas({ mostrarAvisoSimple }) {
       if (index > 0) {
         const fechaAnterior = window._jornadasActuales[index - 1].fecha;
         if (fechaAnterior && valor < fechaAnterior) {
-          mostrarAvisoSimple(
+          window.mostrarAvisoSimple(
             "Fecha inválida",
             `La fecha de la jornada ${index + 1} no puede ser anterior a la jornada ${index}.`,
             "⚠️"

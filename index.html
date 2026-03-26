@@ -94,7 +94,6 @@
         <div class="filtros-estado-scroll">
           <button type="button" class="filtro-estado active" data-estado="">Todos</button>
           <button type="button" class="filtro-estado" data-estado="Presupuestado">Presupuestado</button>
-          <button type="button" class="filtro-estado" data-estado="Seña pagada">Seña pagada</button>
           <button type="button" class="filtro-estado" data-estado="Confirmado">Confirmado</button>
           <button type="button" class="filtro-estado" data-estado="Realizado">Realizado</button>
           <button type="button" class="filtro-estado" data-estado="Cancelado">Cancelado</button>
@@ -117,10 +116,6 @@
           <div class="stat-card stat-card--dark">
             <div class="stat-label">Total</div>
             <div class="stat-value stat-value--gold" id="totalMes">$0</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Señas</div>
-            <div class="stat-value" id="senasMes">$0</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Saldo</div>
@@ -182,7 +177,6 @@
           <label>Estado</label>
           <select id="status">
             <option>Presupuestado</option>
-            <option>Seña pagada</option>
             <option>Confirmado</option>
             <option>Realizado</option>
             <option>Cancelado</option>
@@ -197,9 +191,6 @@
         </div>
         <div class="form-group">
           <label>Total $</label><input type="number" id="total" />
-        </div>
-        <div class="form-group">
-          <label>Seña $</label><input type="number" id="deposit" />
         </div>
       </div>
 

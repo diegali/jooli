@@ -201,11 +201,6 @@
   color: var(--status-presupuestado-text);
 }
 
-.status-badge--Seña-pagada {
-  background: var(--status-sena-bg);
-  color: var(--status-sena-text);
-}
-
 .status-badge--Confirmado {
   background: var(--status-confirmado-bg);
   color: var(--status-confirmado-text);
@@ -289,10 +284,6 @@
 
 .card[data-status="Presupuestado"] {
   border-left-color: var(--status-presupuestado-bg);
-}
-
-.card[data-status="Seña pagada"] {
-  border-left-color: var(--status-sena-bg);
 }
 
 .card[data-status="Confirmado"] {

@@ -70,7 +70,6 @@ export function getFormData() {
         client: document.getElementById("client")?.value || "",
         cuit: document.getElementById("cuit")?.value || "",
         total: document.getElementById("total")?.value || "",
-        deposit: document.getElementById("deposit")?.value || "",
         status: document.getElementById("status")?.value || "",
         paid: document.getElementById("paid")?.value === "true",
         invoiceNumber: document.getElementById("invoiceNumber")?.value || "",
@@ -113,7 +112,7 @@ export async function fillFormForEdit(evento, id, deps) {
 
     // Campos generales (siempre presentes)
     const camposGenerales = [
-        "client", "cuit", "total", "deposit",
+        "client", "cuit", "total",
         "status", "invoiceNumber", "invoiceType",
     ];
 

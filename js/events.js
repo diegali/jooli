@@ -385,14 +385,11 @@ function updateStats(events) {
   eventosFiltrados = eventosFiltrados.filter(e => e.status !== "Cancelado" && e.status !== "Cerrado");
 
   const totalMes = eventosFiltrados.reduce((sum, e) => sum + Number(e.total || 0), 0);
-  const senasMes = eventosFiltrados.reduce((sum, e) => sum + Number(e.deposit || 0), 0);
   const cobrado = eventosFiltrados.filter(e => e.paid === true).reduce((sum, e) => sum + Number(e.total || 0), 0);
   const porCobrar = totalMes - cobrado;
 
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
   set("totalMes", `$${totalMes.toLocaleString()}`);
-  set("senasMes", `$${senasMes.toLocaleString()}`);
-  set("saldoMes", `$${(totalMes - senasMes).toLocaleString()}`);
   set("eventosMes", eventosFiltrados.length);
   set("cobradoMes", `$${cobrado.toLocaleString()}`);
   set("porCobrarMes", `$${porCobrar.toLocaleString()}`);
@@ -420,7 +417,7 @@ window.resetFormConfirmado = function () {
 export function initEvents() {
 
   // Inicializar módulos
-  initJornadas({ mostrarAvisoSimple });
+  initJornadas();
   initMaps({ mostrarAvisoSimple });
 
   const avisos = initAvisos({
