@@ -155,7 +155,7 @@ function renderStaffList(snapshot) {
 }
 
 window.verEventosMozo = function (nombreMozo) {
-  const hoy = new Date().toISOString().split("T")[0];
+  const hoy = new Date().toLocaleDateString("sv").split("T")[0];
 
   const eventos = (window.allEventsData || []).filter(e => {
     if (e.status === "Cancelado") return false;
@@ -422,7 +422,7 @@ window.abrirModalGestionStaff = async function (eventId) {
 
   modal.dataset.eventId = eventId;
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("sv").split("T")[0];
   const fechaRef = esJornada ? (staffSource.fecha || evento.date) : evento.date;
   const soloLectura = fechaRef < today;
 

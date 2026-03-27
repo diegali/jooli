@@ -1,4 +1,4 @@
-# 🧠 CONTEXTO PARA IA – JOOLI CateringDesk (v2 — actualizado 25/03/2026)
+# 🧠 CONTEXTO PARA IA – JOOLI CateringDesk (v4 — actualizado 27/03/2026)
 
 > Pegá este archivo al inicio de cada chat nuevo para trabajar sin subir el proyecto.
 
@@ -62,29 +62,29 @@ Se usa principalmente desde el **celular**.
 ```
 index.html              ← estructura general + registro del SW al final del body
 manifest.json           ← config PWA
-sw.js                   ← service worker (versión jooli-v2, reescrito)
+sw.js                   ← service worker (versión jooli-v6)
 
 css/
   base.css              ← variables globales de color y tipografía
   layout.css            ← estructura general
   login.css             ← pantalla de acceso
-  events.css            ← estilos de eventos (~994 líneas)
+  events.css            ← estilos de eventos
   staff.css             ← personal
   checklist.css         ← checklist
-  modals.css            ← ventanas modales (~408 líneas)
+  modals.css            ← ventanas modales
 
 js/
   auth.js               ← Firebase config + login
   main.js               ← coordina toda la app
   calendar.js           ← calendario (FullCalendar)
-  events.js             ← lógica principal de eventos (~1261 líneas)
-  staff.js              ← gestión de personal (~1306 líneas)
-  lista.js              ← checklist y catálogo (~576 líneas)
+  events.js             ← lógica principal de eventos
+  staff.js              ← gestión de personal
+  lista.js              ← checklist y catálogo
   ui.js                 ← utilidades visuales menores
 
   events/               ← submódulos de eventos
-    events-form.js      ← formulario alta/edición (~304 líneas)
-    events-render.js    ← renderizado de tarjetas (~464 líneas)
+    events-form.js      ← formulario alta/edición
+    events-render.js    ← renderizado de tarjetas
     events-jornadas.js  ← lógica de eventos multidia
     events-maps.js      ← integración Google Maps
     events-budget.js    ← presupuesto/factura/alquileres
@@ -129,7 +129,7 @@ export const USUARIOS_MAP = {
 ### Eventos
 - Calendario mensual (FullCalendar)
 - Lista de eventos con:
-  - Filtro por **estado** (Todos / Presupuestado / Seña pagada / Confirmado / Realizado / Cancelado / Cerrado)
+  - Filtro por **estado** (Todos / Presupuestado / Confirmado / Realizado / Cancelado / Cerrado)
   - Filtro por **mes** — segunda fila de botones, aparece solo si hay eventos en más de un mes. Funciona combinado con el filtro de estado.
   - Búsqueda por cliente (campo de texto, filtra por `data-cliente`)
 - Crear / editar / eliminar eventos
@@ -160,7 +160,7 @@ export const USUARIOS_MAP = {
 - Exportación PDF
 
 ### Administración / Presupuesto
-- Total, seña, saldo, estado de pago, tipo de factura
+- Total, saldo, estado de pago, tipo de factura
 - Adjuntos en Firebase Storage
 - Generación PDF de presupuesto con imagen de fondo
 - Estadísticas por mes (Chart.js)
@@ -170,11 +170,11 @@ export const USUARIOS_MAP = {
 - Sonido, panel, se marcan como leídas automáticamente
 
 ### PWA / Service Worker
-- `sw.js` reescrito (versión `jooli-v2`)
+- `sw.js` en versión `jooli-v6`
 - Cachea todos los archivos CSS y JS reales del proyecto
 - Firebase, gstatic y googleapis van siempre a la red (nunca se cachean)
 - Registrado en `index.html` al final del `<body>`
-- ⚠️ Cada vez que se suben cambios a GitHub, hay que incrementar `CACHE_NAME` en `sw.js` (jooli-v3, v4...) para que los celulares descarguen los archivos nuevos
+- ⚠️ Cada vez que se suben cambios a GitHub, hay que incrementar `CACHE_NAME` en `sw.js` (jooli-v7, v8...) para que los celulares descarguen los archivos nuevos
 
 ---
 
@@ -200,6 +200,7 @@ Helpers: `formatDate`, `formatDateShort`, `getMonthLabel`, `getCurrentUserName`,
 
 ### `events-jornadas.js`
 `initJornadas()` → `window.toggleMultidia`, `window.agregarJornada`.
+Usa `window.mostrarAvisoSimple` directamente (no como parámetro).
 
 ### `events-budget.js`
 Presupuesto, factura, alquileres. Subida a Firebase Storage.
@@ -233,10 +234,11 @@ Calendario FullCalendar. Lee eventos de Firestore.
   horaFin: "23:00",
   horaPresentacion: "18:30",
   notes: "...",
-  status: "Confirmado",       // Presupuestado / Seña pagada / Confirmado / Realizado / Cancelado
+  status: "Confirmado",       // Presupuestado / Confirmado / Realizado / Cancelado / Cerrado
   paid: false,
   total: 150000,
-  deposit: 50000,
+  // NOTA: el campo deposit (seña) fue eliminado de la app pero puede existir
+  // en eventos viejos de Firestore — se ignora sin problema
   invoiceType: "B/C",
   invoiceNumber: "",
   cuit: "",
@@ -304,7 +306,15 @@ Calendario FullCalendar. Lee eventos de Firestore.
 
 ---
 
-## 📌 REGLAS PARA AYUDARME
+## ⚠️ DECISIONES TÉCNICAS TOMADAS
+
+- **Cálculo automático de staff eliminado**: el campo "personal necesario" se carga a mano, sin calcular en base a invitados. La lógica que existía en `events.js` fue removida.
+- **Bug de zona horaria corregido**: todas las comparaciones de fecha usan `new Date().toLocaleDateString("sv").split("T")[0]` en lugar de `new Date().toISOString().split("T")[0]`. El motivo: `toISOString()` devuelve hora UTC y Argentina es UTC-3, lo que causaba que después de las 21hs el "hoy" y el countdown se adelantaran un día. Archivos corregidos: `events-render.js`, `events.js`, `events-form.js`, `events-avisos.js`, `staff.js`, `lista.js`.
+- **Campo `deposit` (seña) eliminado de la app**: los eventos viejos en Firestore pueden tener ese campo pero se ignora sin problema.
+
+---
+
+
 
 1. **Paso a paso** → nada de cambios gigantes
 2. **Sin romper lo que funciona** → cambios seguros primero
@@ -325,4 +335,4 @@ Apunta a resolver tareas reales del día a día.
 
 ---
 
-*Fin del contexto — v2, actualizado 25/03/2026*
+*Fin del contexto — v4, actualizado 27/03/2026*

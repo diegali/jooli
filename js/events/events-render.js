@@ -15,7 +15,7 @@ export function renderFilteredEvents(events, deps) {
 
   eventsList.innerHTML = "";
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("sv").split("T")[0];
   const estadoActivo =
     document.querySelector(".filtro-estado.active")?.dataset.estado || "";
 
@@ -89,7 +89,7 @@ function renderGroup(groups, sectionTitle, colorClass) {
 }
 
 function createCard(evento, id) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("sv").split("T")[0];
   const esHoy = evento.date === today;
 
   const fechaRef = evento.esMultidia ? (evento.jornadas?.[0]?.fecha || "") : (evento.date || "");
@@ -152,7 +152,7 @@ function createCard(evento, id) {
       </div>
       ${alquileresTexto}
       ${(() => {
-      const hoy = new Date().toISOString().split("T")[0];
+      const hoy = new Date().toLocaleDateString("sv").split("T")[0];
       const fechaRef = evento.esMultidia ? (evento.jornadas?.[0]?.fecha || "") : (evento.date || "");
       if (fechaRef < hoy) return "";
 
@@ -429,7 +429,7 @@ export function registerEventDetailModal(deps) {
         `;
     }
 
-    const eventoPasado = evento.date < new Date().toISOString().split("T")[0];
+    const eventoPasado = evento.date < new Date().toLocaleDateString("sv").split("T")[0];
 
     const editarBtn = document.getElementById("detalleEditarBtn");
     const staffBtn = document.getElementById("detalleStaffBtn");

@@ -222,7 +222,7 @@ window.abrirModalChecklist = function (eventId) {
   // Guardar siempre la versión más actual del evento para volver al detalle
   window.eventoChecklistActual = evento;
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("sv").split("T")[0];
   window.checklistSoloLectura = evento.date < today;
 
   pestanaActiva = "checklist";

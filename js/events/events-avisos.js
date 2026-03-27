@@ -5,7 +5,7 @@ import { formatDate } from "./events-utils.js";
 export function initAvisos({ mostrarAvisoSimple, onConfirmarRealizacion }) {
 
   let eventoPendienteConfirmacion = null;
-  let modalConfirmacionAbierto    = false;
+  let modalConfirmacionAbierto = false;
 
   // ===============================
   // CONFIRMACIÓN DE REALIZACIÓN
@@ -16,7 +16,7 @@ export function initAvisos({ mostrarAvisoSimple, onConfirmarRealizacion }) {
     if (!modal || !texto) return;
 
     eventoPendienteConfirmacion = evento;
-    modalConfirmacionAbierto    = true;
+    modalConfirmacionAbierto = true;
 
     texto.innerHTML = `
       El evento de <strong>${evento.client || "sin cliente"}</strong><br>
@@ -31,9 +31,9 @@ export function initAvisos({ mostrarAvisoSimple, onConfirmarRealizacion }) {
     const modal = document.getElementById("modalConfirmarRealizacion");
     if (!modal) return;
 
-    modal.style.display             = "none";
-    eventoPendienteConfirmacion     = null;
-    modalConfirmacionAbierto        = false;
+    modal.style.display = "none";
+    eventoPendienteConfirmacion = null;
+    modalConfirmacionAbierto = false;
 
     verificarAvisosPendientes(window.allEventsData || []);
   }
@@ -44,13 +44,13 @@ export function initAvisos({ mostrarAvisoSimple, onConfirmarRealizacion }) {
   function verificarEventosPasados(events) {
     if (modalConfirmacionAbierto) return;
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toLocaleDateString("sv").split("T")[0];
 
     for (const evento of events) {
-      const yaPaso      = evento.date && evento.date < today;
+      const yaPaso = evento.date && evento.date < today;
       const yaConfirmado = evento.realizacionConfirmada === true;
-      const yaRealizado  = evento.status === "Realizado";
-      const yaCancelado  = evento.status === "Cancelado";
+      const yaRealizado = evento.status === "Realizado";
+      const yaCancelado = evento.status === "Cancelado";
 
       if (yaPaso && !yaConfirmado && !yaRealizado && !yaCancelado) {
         abrirModalConfirmarRealizacion(evento);
@@ -60,14 +60,14 @@ export function initAvisos({ mostrarAvisoSimple, onConfirmarRealizacion }) {
   }
 
   function verificarAvisosPendientes(events) {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toLocaleDateString("sv").split("T")[0];
     const en3dias = new Date();
     en3dias.setDate(en3dias.getDate() + 3);
-    const limite = en3dias.toISOString().split("T")[0];
+    const limite = en3dias.toLocaleDateString("sv").split("T")[0];
 
     const manana = new Date();
     manana.setDate(manana.getDate() + 1);
-    const fechaManana = manana.toISOString().split("T")[0];
+    const fechaManana = manana.toLocaleDateString("sv").split("T")[0];
 
     const staffCriticos = events.filter(e => {
       if (e.date < today || e.date > limite) return false;
@@ -98,7 +98,7 @@ export function initAvisos({ mostrarAvisoSimple, onConfirmarRealizacion }) {
           m => (m.estado || "pendiente") !== "rechazado"
         ).length;
         const faltan = Number(e.staffNecesario) - asignados;
-        const fecha  = new Date(e.date + "T00:00:00").toLocaleDateString("es-AR");
+        const fecha = new Date(e.date + "T00:00:00").toLocaleDateString("es-AR");
         return `• ${fecha} · ${e.client} — faltan <strong>${faltan} mozo${faltan > 1 ? "s" : ""}</strong>`;
       }).join("<br>");
     }
@@ -107,8 +107,8 @@ export function initAvisos({ mostrarAvisoSimple, onConfirmarRealizacion }) {
       if (mensaje) mensaje += "<br><br>";
       mensaje += `<strong>📦 Checklist pendiente para mañana:</strong><br>`;
       mensaje += checklistCriticos.map(e => {
-        const checklist  = e.checklist || [];
-        const fecha      = new Date(e.date + "T00:00:00").toLocaleDateString("es-AR");
+        const checklist = e.checklist || [];
+        const fecha = new Date(e.date + "T00:00:00").toLocaleDateString("es-AR");
         if (checklist.length === 0) {
           return `• ${fecha} · ${e.client} — sin checklist armado`;
         }
@@ -132,13 +132,13 @@ export function initAvisos({ mostrarAvisoSimple, onConfirmarRealizacion }) {
       .filter(e => e.status !== "Cancelado")
       .forEach(e => {
         if (!e.date) return;
-        const mes    = e.date.substring(0, 7);
-        conteo[mes]  = (conteo[mes] || 0) + 1;
+        const mes = e.date.substring(0, 7);
+        conteo[mes] = (conteo[mes] || 0) + 1;
       });
 
     const mesesOrdenados = Object.keys(conteo).sort();
-    const nombres        = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-    const labels         = mesesOrdenados.map(m => {
+    const nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    const labels = mesesOrdenados.map(m => {
       const [anio, mes] = m.split("-");
       return `${nombres[parseInt(mes) - 1]} ${anio}`;
     });
@@ -151,16 +151,16 @@ export function initAvisos({ mostrarAvisoSimple, onConfirmarRealizacion }) {
       data: {
         labels,
         datasets: [{
-          label:           "Eventos",
-          data:            datos,
+          label: "Eventos",
+          data: datos,
           backgroundColor: "#d4af37",
-          borderRadius:    6,
+          borderRadius: 6,
         }]
       },
       options: {
         responsive: true,
         plugins: { legend: { display: false } },
-        scales:  { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
       },
     });
   }

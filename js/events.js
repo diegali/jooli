@@ -59,7 +59,7 @@ function actualizarFiltrosMes(events) {
   const scroll = document.getElementById("filtrosMesScroll");
   if (!wrap || !scroll) return;
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("sv").split("T")[0];
   const mesesSet = new Set();
 
   events.forEach((e) => {
@@ -505,27 +505,6 @@ export function initEvents() {
       ? window.abrirModalChecklist(editingId)
       : mostrarAvisoSimple("Para gestionar la checklist, primero guarda el evento.", "⚠️");
   });
-
-  // Cálculo automático de mozos
-  const guestsInput = document.getElementById("guests");
-  const staffInput = document.getElementById("staffNecesario");
-  let staffEditadoManualmente = false;
-
-  if (guestsInput && staffInput) {
-    guestsInput.addEventListener("input", function () {
-      const invitados = Number(this.value) || 0;
-      if (!staffEditadoManualmente) {
-        staffInput.value = invitados > 0 ? Math.ceil(invitados / 10) : "";
-      }
-    });
-    staffInput.addEventListener("input", function () {
-      staffEditadoManualmente = !!this.value;
-      if (!staffEditadoManualmente) {
-        const invitados = Number(guestsInput.value) || 0;
-        staffInput.value = invitados > 0 ? Math.ceil(invitados / 10) : "";
-      }
-    });
-  }
 
   // Filtros
   document.addEventListener("change", (e) => {

@@ -192,7 +192,7 @@ export async function fillFormForEdit(evento, id, deps) {
         form.scrollIntoView({ behavior: "smooth" });
     }
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toLocaleDateString("sv").split("T")[0];
     const fechaRef = evento.esMultidia
         ? (evento.jornadas?.[evento.jornadas.length - 1]?.fecha || "")
         : (evento.date || "");
