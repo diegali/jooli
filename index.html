@@ -97,7 +97,9 @@
           <button type="button" class="filtro-estado" data-estado="Confirmado">Confirmado</button>
           <button type="button" class="filtro-estado" data-estado="Realizado">Realizado</button>
           <button type="button" class="filtro-estado" data-estado="Cancelado">Cancelado</button>
-          <button type="button" class="filtro-estado" data-estado="Cerrado">Cerrado</button>
+          <span class="filtro-separador"></span>
+          <button type="button" class="filtro-estado filtro-estado--cerrado" data-estado="Cerrado">Cerrado</button>
+
         </div>
       </div>
       <div class="filtros-mes-wrap" id="filtrosMesWrap" style="display:none;">
@@ -627,7 +629,7 @@
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js")
+        navigator.serviceWorker.register("./sw.js")
           .catch(err => console.warn("SW error:", err));
       });
     }

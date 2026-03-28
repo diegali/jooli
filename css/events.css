@@ -115,6 +115,21 @@
   color: var(--text-primary);
 }
 
+.filtro-estado--cerrado {
+   opacity: 0.6;
+  font-style: italic;
+}
+
+.filtro-separador {
+  display: inline-block;
+  width: 2px;
+  height: 30px;
+  background-color: #aaa;
+  margin: 0 8px;
+  vertical-align: middle;
+  border-radius: 2px;
+}
+
 /* ---- Cards de evento ---- */
 .event-card {
   background: var(--bg-card);
