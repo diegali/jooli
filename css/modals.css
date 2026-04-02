@@ -405,6 +405,58 @@
   color: #888;
 }
 
+/* ---- Pagos parciales (modal detalle) ---- */
+.detail-pago-fila {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88em;
+  padding: 3px 0;
+}
+
+.detail-pago-estado {
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.detail-pago-estado--pagado {
+  color: var(--color-success);
+}
+
+.detail-pago-estado--pendiente {
+  color: #e67e22;
+}
+
+.detail-pago-monto {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.detail-pago-factura {
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+.detail-pago-resumen {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-light, #eee);
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.detail-pago-resumen--pagado {
+  color: var(--color-success);
+}
+
+.detail-pago-resumen--pendiente {
+  color: #e67e22;
+}
+
 .btn-aviso-confirmar {
   padding: 10px 20px;
   background: var(--color-danger);

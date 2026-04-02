@@ -276,3 +276,184 @@ export async function eliminarAlquilerEvento(editingId, deps) {
         window.mostrarAvisoSimple("Error", "No se pudo eliminar el archivo.", "❌");
     }
 }
+
+// ─── PAGOS PARCIALES ──────────────────────────────────────────────
+
+// Estado en memoria de los pagos mientras se edita el formulario
+let _pagosEnEdicion = [];
+let _pagosEditingId = null;
+let _pagosDeps = null;
+
+window._getPagosEnEdicion = () => _pagosEnEdicion;
+
+export function initPagosForm(editingId, deps) {
+    _pagosEditingId = editingId;
+    _pagosDeps = deps;
+
+    const evento = (window.allEventsData || []).find(e => e.id === editingId);
+    _pagosEnEdicion = JSON.parse(JSON.stringify(evento?.pagos || []));
+
+    renderPagosForm();
+}
+
+export function resetPagosForm() {
+    _pagosEnEdicion = [];
+    _pagosEditingId = null;
+    renderPagosForm();
+}
+
+function renderPagosForm() {
+    const contenedor = document.getElementById("pagos-lista-form");
+    if (!contenedor) return;
+
+    if (_pagosEnEdicion.length === 0) {
+        contenedor.innerHTML = "";
+        return;
+    }
+
+    contenedor.innerHTML = _pagosEnEdicion.map((pago, i) => `
+        <div class="pago-fila" data-idx="${i}">
+            <div class="pago-fila-top">
+                <input
+                    type="text"
+                    inputmode="numeric"
+                    class="pago-monto-input"
+                    placeholder="$0"
+                    value="${pago.monto ? Number(pago.monto).toLocaleString('es-AR') : ''}"
+                    onfocus="this.value=this.value.replace(/\./g,'')"
+                    onblur="this.value=this.value.replace(/\D/g,'') ? Number(this.value.replace(/\D/g,'')).toLocaleString('es-AR') : ''"
+                    onchange="window._onPagoMontoCambio(${i}, this.value.replace(/\./g,''))"
+                />
+                <select class="pago-estado-select" onchange="window._onPagoEstadoCambio(${i}, this.value)">
+                    <option value="pendiente" ${pago.estado === "pendiente" ? "selected" : ""}>⏳ Pendiente</option>
+                    <option value="pagado" ${pago.estado === "pagado" ? "selected" : ""}>✔ Pagado</option>
+                </select>
+                <button type="button" class="btn-adjunto btn-adjunto--eliminar" onclick="window._eliminarPago(${i})">🗑</button>
+            </div>
+            <div class="pago-fila-factura">
+                <select class="adjunto-select pago-factura-tipo" onchange="window._onPagoFacturaTipoCambio(${i}, this.value)">
+                    <option value="B/C" ${(pago.facturaTipo || "B/C") === "B/C" ? "selected" : ""}>B/C</option>
+                    <option value="A" ${pago.facturaTipo === "A" ? "selected" : ""}>A</option>
+                </select>
+                <input
+                    type="text"
+                    class="adjunto-input pago-factura-numero"
+                    placeholder="Nº factura (opcional)"
+                    value="${pago.facturaNumero || ""}"
+                    onchange="window._onPagoFacturaNumCambio(${i}, this.value)"
+                />
+                <button type="button" class="btn-adjunto" onclick="window._triggerSubirFacturaPago(${i})">📎</button>
+                ${pago.facturaURL
+            ? `<button type="button" class="btn-adjunto btn-adjunto--ver" onclick="window.open('${pago.facturaURL}', '_blank')">👁</button>
+                       <button type="button" class="btn-adjunto btn-adjunto--eliminar" onclick="window._eliminarFacturaPago(${i})">🗑</button>`
+            : ""
+        }
+                <input type="file" id="facturaFilePago_${i}" accept=".pdf,image/*" class="presupuesto-file-input"
+                    onchange="window._subirFacturaPago(${i})">
+            </div>
+            ${pago.facturaNombre ? `<div class="presupuesto-info">📎 ${pago.facturaNombre}</div>` : ""}
+        </div>
+    `).join("");
+}
+
+// Callbacks para cambios en cada fila
+window._onPagoMontoCambio = (i, val) => { _pagosEnEdicion[i].monto = Number(val) || 0; };
+window._onPagoEstadoCambio = (i, val) => { _pagosEnEdicion[i].estado = val; };
+window._onPagoFacturaTipoCambio = (i, val) => { _pagosEnEdicion[i].facturaTipo = val; };
+window._onPagoFacturaNumCambio = (i, val) => { _pagosEnEdicion[i].facturaNumero = val; };
+
+window._eliminarPago = (i) => {
+    _pagosEnEdicion.splice(i, 1);
+    renderPagosForm();
+};
+
+window._triggerSubirFacturaPago = (i) => {
+    document.getElementById(`facturaFilePago_${i}`)?.click();
+};
+
+window._subirFacturaPago = async (i) => {
+    if (!_pagosEditingId || !_pagosDeps) {
+        window.mostrarAvisoSimple("Evento sin guardar", "Primero guardá el evento antes de subir una factura.", "⚠️");
+        return;
+    }
+    const { storage, db } = _pagosDeps;
+    const file = document.getElementById(`facturaFilePago_${i}`)?.files?.[0];
+    if (!file) return;
+
+    const pagoId = _pagosEnEdicion[i].id || `pago_${Date.now()}`;
+    _pagosEnEdicion[i].id = pagoId;
+
+    const filePath = `facturas/${_pagosEditingId}/${pagoId}_${file.name}`;
+    const storageRef = ref(storage, filePath);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+
+    _pagosEnEdicion[i].facturaURL = url;
+    _pagosEnEdicion[i].facturaNombre = file.name;
+    _pagosEnEdicion[i].facturaPath = filePath;
+
+    // Guardar en Firestore inmediatamente
+    const eventoRef = doc(db, "events", _pagosEditingId);
+    await updateDoc(eventoRef, { pagos: _pagosEnEdicion });
+
+    const eventoEnMemoria = (window.allEventsData || []).find(e => e.id === _pagosEditingId);
+    if (eventoEnMemoria) eventoEnMemoria.pagos = JSON.parse(JSON.stringify(_pagosEnEdicion));
+
+    renderPagosForm();
+    window.mostrarAvisoSimple("Factura subida", "La factura se adjuntó correctamente.", "✅");
+};
+
+window._eliminarFacturaPago = async (i) => {
+    if (!_pagosEditingId || !_pagosDeps) return;
+    const { storage, db } = _pagosDeps;
+    const pago = _pagosEnEdicion[i];
+    if (!pago?.facturaPath) return;
+
+    try {
+        await deleteObject(ref(storage, pago.facturaPath));
+    } catch (e) {
+        console.warn("No se pudo borrar el archivo de Storage:", e);
+    }
+
+    _pagosEnEdicion[i].facturaURL = "";
+    _pagosEnEdicion[i].facturaNombre = "";
+    _pagosEnEdicion[i].facturaPath = "";
+
+    const eventoRef = doc(db, "events", _pagosEditingId);
+    await updateDoc(eventoRef, { pagos: _pagosEnEdicion });
+
+    const eventoEnMemoria = (window.allEventsData || []).find(e => e.id === _pagosEditingId);
+    if (eventoEnMemoria) eventoEnMemoria.pagos = JSON.parse(JSON.stringify(_pagosEnEdicion));
+
+    renderPagosForm();
+};
+
+export function agregarPago() {
+    _pagosEnEdicion.push({
+        id: `pago_${Date.now()}`,
+        monto: 0,
+        estado: "pendiente",
+        facturaTipo: "B/C",
+        facturaNumero: "",
+        facturaURL: "",
+        facturaNombre: "",
+        facturaPath: "",
+    });
+    renderPagosForm();
+}
+
+export async function guardarPagos(editingId, deps) {
+    if (!editingId) {
+        window.mostrarAvisoSimple("Evento sin guardar", "Primero guardá el evento y luego agregá los pagos.", "⚠️");
+        return;
+    }
+    const { db } = deps;
+
+    const eventoRef = doc(db, "events", editingId);
+    await updateDoc(eventoRef, { pagos: _pagosEnEdicion });
+
+    const eventoEnMemoria = (window.allEventsData || []).find(e => e.id === editingId);
+    if (eventoEnMemoria) eventoEnMemoria.pagos = JSON.parse(JSON.stringify(_pagosEnEdicion));
+
+    window.mostrarAvisoSimple("Pagos guardados", "Los pagos se guardaron correctamente.", "✅");
+}

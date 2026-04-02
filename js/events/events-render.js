@@ -298,13 +298,31 @@ export function registerEventDetailModal(deps) {
                   ${evento.paid ? `<span class="detail-cobrado-badge">COBRADO</span>` : ""}
                 </span>
               </div>
-               ${evento.invoiceNumber ? `
-              <div class="detail-bloque-fila">
-                <span class="detail-bloque-icono">🧾</span>
-                <span class="detail-bloque-texto">Factura: <strong>${evento.invoiceType || ""} ${evento.invoiceNumber}</strong>
-                  ${evento.facturaURL ? `<a href="${evento.facturaURL}" target="_blank" class="detail-maps-link"> Ver</a>` : ""}
-                </span>
-              </div>` : ""}
+              ${(() => {
+          const pagos = evento.pagos || [];
+          if (pagos.length === 0) return "";
+          const montoPagado = pagos
+            .filter(p => p.estado === "pagado")
+            .reduce((acc, p) => acc + Number(p.monto || 0), 0);
+          const montoPendiente = pagos
+            .filter(p => p.estado === "pendiente")
+            .reduce((acc, p) => acc + Number(p.monto || 0), 0);
+          const filas = pagos.map(p => `
+                  <div class="detail-pago-fila">
+                    <span class="detail-pago-estado detail-pago-estado--${p.estado}">${p.estado === "pagado" ? "✔" : "⏳"}</span>
+                    <span class="detail-pago-monto">$${Number(p.monto || 0).toLocaleString()}</span>
+                    ${p.facturaNumero ? `<span class="detail-pago-factura">Fac. ${p.facturaTipo || ""} ${p.facturaNumero}</span>` : ""}
+                    ${p.facturaURL ? `<a href="${p.facturaURL}" target="_blank" class="detail-maps-link">Ver</a>` : ""}
+                  </div>`).join("");
+          return `
+                  <div class="detail-bloque-fila" style="flex-direction:column; gap:4px; margin-top:4px;">
+                    ${filas}
+                    <div class="detail-pago-resumen">
+                      ${montoPagado > 0 ? `<span class="detail-pago-resumen--pagado">Cobrado: $${montoPagado.toLocaleString()}</span>` : ""}
+                      ${montoPendiente > 0 ? `<span class="detail-pago-resumen--pendiente">Pendiente: $${montoPendiente.toLocaleString()}</span>` : ""}
+                    </div>
+                  </div>`;
+        })()}
               ${evento.presupuestoURL ? `
               <div class="detail-bloque-fila">
                 <span class="detail-bloque-icono">📄</span>

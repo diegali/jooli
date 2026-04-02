@@ -192,27 +192,15 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Total $</label><input type="number" id="total" />
+          <label>Total $</label><input type="text" id="total" inputmode="numeric" />
         </div>
       </div>
 
-      <!-- Factura -->
+      <!-- Pagos parciales -->
       <div class="form-group form-group--full">
-        <label>Factura</label>
-        <div class="adjunto-row">
-          <select id="invoiceType" class="adjunto-select">
-            <option value="B/C">B/C</option>
-            <option value="A">A</option>
-          </select>
-          <input type="text" id="invoiceNumber" placeholder="Nº factura" class="adjunto-input" />
-          <button type="button" id="btnSubirFactura" class="btn-adjunto">📎</button>
-          <button type="button" id="btnVerFactura" class="btn-adjunto btn-adjunto--ver"
-            style="display:none;">👁</button>
-          <button type="button" id="btnEliminarFactura" class="btn-adjunto btn-adjunto--eliminar"
-            style="display:none;">🗑</button>
-          <input type="file" id="facturaFile" accept=".pdf,image/*" class="presupuesto-file-input">
-        </div>
-        <div id="facturaInfo" class="presupuesto-info">No hay factura adjunta.</div>
+        <label>Pagos</label>
+        <div id="pagos-lista-form"></div>
+        <button type="button" id="btnAgregarPago" class="btn-agregar-pago">+ Agregar pago</button>
       </div>
 
       <!-- Presupuesto -->
@@ -248,11 +236,11 @@
             <select id="type">
               <option>Catering Completo</option>
               <option>Coffee</option>
-              <option>Almuerzo/Cena informal</option>
-              <option>Almuerzo/Cena formal</option>
+              <option>Almuerzo informal</option>
+              <option>Cena informal</option>
+              <option>Almuerzo formal</option>
+              <option>Cena formal</option>
               <option>Asado</option>
-              <option>Cumpleaños</option>
-              <option>Cumpleaños de 15</option>
             </select>
           </div>
           <div class="form-group jornada-invitados">

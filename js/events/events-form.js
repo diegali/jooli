@@ -1,4 +1,28 @@
 // js/events/events-form.js
+// Máscara de miles para campos de monto
+function formatearMiles(valor) {
+    const limpio = String(valor).replace(/\D/g, "");
+    if (!limpio) return "";
+    return Number(limpio).toLocaleString("es-AR");
+}
+
+function limpiarMiles(valor) {
+    return String(valor).replace(/\./g, "").replace(/,/g, "");
+}
+
+function aplicarMascaraMiles(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("blur", function () {
+        this.value = formatearMiles(this.value);
+    });
+    el.addEventListener("focus", function () {
+        this.value = limpiarMiles(this.value);
+    });
+}
+
+aplicarMascaraMiles("total");
+
 document.getElementById("cuit")?.addEventListener("input", function () {
     const limpio = this.value.replace(/\D/g, "").slice(0, 11);
     if (limpio.length <= 2) {
@@ -19,7 +43,7 @@ export function resetForm({ setEditingId, actualizarUIBudget }) {
         form.style.display = "none";
 
         form.querySelectorAll("input, select, textarea").forEach((el) => {
-            if (!["type", "status", "paid", "invoiceType"].includes(el.id)) {
+            if (!["type", "status", "paid"].includes(el.id)) {
                 el.value = "";
             }
             if (el.type === "checkbox") {
@@ -66,13 +90,11 @@ export function getFormData() {
     const esMultidiaChecked = document.getElementById("esMultidia")?.checked || false;
 
     return {
-        invoiceType: document.getElementById("invoiceType")?.value || "B/C",
         client: document.getElementById("client")?.value || "",
         cuit: document.getElementById("cuit")?.value || "",
-        total: document.getElementById("total")?.value || "",
+        total: limpiarMiles(document.getElementById("total")?.value || ""),
         status: document.getElementById("status")?.value || "",
         paid: document.getElementById("paid")?.value === "true",
-        invoiceNumber: document.getElementById("invoiceNumber")?.value || "",
         esMultidia: esMultidiaChecked,
         jornadas: window._jornadasActuales || [],
         staffAsignado: selectedStaff,
@@ -119,7 +141,8 @@ export async function fillFormForEdit(evento, id, deps) {
     camposGenerales.forEach((field) => {
         const el = document.getElementById(field);
         if (el) {
-            el.value = evento[field] || (field === "invoiceType" ? "B/C" : "");
+            const val = evento[field] || (field === "invoiceType" ? "B/C" : "");
+            el.value = field === "total" ? formatearMiles(val) : val;
         }
     });
 
@@ -218,23 +241,8 @@ export async function fillFormForEdit(evento, id, deps) {
         verBtn.onclick = () => window.open(evento.presupuestoURL, "_blank");
     }
 
-    // Factura
-    const verFacturaBtn = document.getElementById("btnVerFactura");
-    const eliminarFacturaBtn = document.getElementById("btnEliminarFactura");
-    const subirFacturaBtn = document.getElementById("btnSubirFactura");
-    const facturaInfoEl = document.getElementById("facturaInfo");
-
-    if (facturaInfoEl) {
-        facturaInfoEl.textContent = evento.facturaNombre
-            ? `Archivo: ${evento.facturaNombre}`
-            : "No hay factura adjunta.";
-    }
-    if (subirFacturaBtn) subirFacturaBtn.style.display = puedeEditar ? "inline-block" : "none";
-    if (verFacturaBtn) verFacturaBtn.style.display = evento.facturaURL ? "inline-block" : "none";
-    if (eliminarFacturaBtn) eliminarFacturaBtn.style.display = puedeEditar && evento.facturaURL ? "inline-block" : "none";
-    if (verFacturaBtn && evento.facturaURL) {
-        verFacturaBtn.onclick = () => window.open(evento.facturaURL, "_blank");
-    }
+    // Pagos parciales
+    if (window._initPagosForm) window._initPagosForm(id);
 
     // Alquileres
     const verAlquilerBtn = document.getElementById("btnVerAlquiler");
@@ -254,15 +262,6 @@ export async function fillFormForEdit(evento, id, deps) {
         verAlquilerBtn.onclick = () => window.open(evento.alquilerURL, "_blank");
     }
 
-    // Si el evento pasó, ocultar botones de subir/eliminar archivos
-    if (eventoPasado) {
-        if (subirBtn) subirBtn.style.display = "none";
-        if (eliminarBtn) eliminarBtn.style.display = "none";
-        if (subirFacturaBtn) subirFacturaBtn.style.display = "none";
-        if (eliminarFacturaBtn) eliminarFacturaBtn.style.display = "none";
-        if (subirAlquilerBtn) subirAlquilerBtn.style.display = "none";
-        if (eliminarAlquilerBtn) eliminarAlquilerBtn.style.display = "none";
-    }
 
     // Staff y checklist
     const btnStaff = document.getElementById("btnGestionarStaff");

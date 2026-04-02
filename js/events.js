@@ -3,11 +3,13 @@ import {
   actualizarUIBudget,
   subirPresupuestoEvento,
   eliminarPresupuestoEvento,
-  subirFacturaEvento,
-  eliminarFacturaEvento,
   actualizarUIAlquiler,
   subirAlquilerEvento,
   eliminarAlquilerEvento,
+  initPagosForm,
+  resetPagosForm,
+  agregarPago,
+  guardarPagos,
 } from "./events/events-budget.js";
 import {
   renderFilteredEvents,
@@ -22,6 +24,7 @@ import { initJornadas } from "./events/events-jornadas.js";
 import { initMaps } from "./events/events-maps.js";
 import { initAvisos } from "./events/events-avisos.js";
 import { db, auth, storage } from "./auth.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 import { renderStaffSelection } from "./staff.js";
 import {
   collection,
@@ -48,6 +51,7 @@ function resetEventForm() {
     setEditingId,
     actualizarUIBudget: (evento) => actualizarUIBudget(evento, { auth }),
   });
+  resetPagosForm();
 }
 
 // ===============================
@@ -194,6 +198,7 @@ async function saveEvent() {
   }
   eventData.ultimoCambioPor = userName;
   eventData.mensajesEnviados = [];
+  eventData.pagos = window._getPagosEnEdicion ? window._getPagosEnEdicion() : [];
 
   prepararEventData(eventData);
 
@@ -224,6 +229,7 @@ async function updateExistingEvent() {
   delete eventData.presupuestoURL;
   delete eventData.presupuestoNombre;
   delete eventData.presupuestoPath;
+  eventData.pagos = window._getPagosEnEdicion ? window._getPagosEnEdicion() : [];
 
   if (!["Realizado", "Cancelado"].includes(eventData.status)) {
     eventData.realizacionConfirmada = false;
@@ -424,8 +430,8 @@ export function initEvents() {
     mostrarAvisoSimple,
     onConfirmarRealizacion: async (evento, statusFinal) => {
       try {
-        const ref = doc(db, "events", evento.id);
-        const snap = await getDoc(ref);
+        const eventoRef = doc(db, "events", evento.id);
+        const snap = await getDoc(eventoRef);
         if (!snap.exists()) return;
 
         const dataActual = snap.data();
@@ -437,7 +443,7 @@ export function initEvents() {
           );
           return;
         }
-        await updateDoc(ref, { status: statusFinal, realizacionConfirmada: true });
+        await updateDoc(eventoRef, { status: statusFinal, realizacionConfirmada: true });
       } catch (error) {
         console.error("Error al confirmar realización:", error);
       }
@@ -581,42 +587,22 @@ export function initEvents() {
     });
   }
 
-  // Factura
-  const facturaFile = document.getElementById("facturaFile");
-  const btnSubirFactura = document.getElementById("btnSubirFactura");
-  const btnEliminarFactura = document.getElementById("btnEliminarFactura");
+  // Pagos parciales
+  window._initPagosForm = (id) => initPagosForm(id, { storage, db, auth });
 
-  if (btnSubirFactura && facturaFile) {
-    btnSubirFactura.addEventListener("click", () => {
+  const btnAgregarPago = document.getElementById("btnAgregarPago");
+  if (btnAgregarPago) {
+    btnAgregarPago.addEventListener("click", () => {
       if (!editingId) {
-        mostrarAvisoSimple("Evento no guardado", "Primero guardá el evento para poder adjuntar la factura.", "⚠️");
+        mostrarAvisoSimple("Evento sin guardar", "Primero guardá el evento para poder agregar pagos.", "⚠️");
         return;
       }
-      facturaFile.click();
-    });
-    facturaFile.addEventListener("change", async () => {
-      await subirFacturaEvento(editingId, { storage, db, auth });
-      facturaFile.value = "";
+      agregarPago();
     });
   }
 
-  if (btnEliminarFactura) {
-    btnEliminarFactura.addEventListener("click", () => {
-      const ev = window.allEventsData.find(ev => ev.id === editingId);
-      const nombreArchivo = ev?.facturaNombre || "esta factura";
-      mostrarAvisoSimple(
-        "¿Eliminar factura?",
-        `¿Seguro que querés eliminar <strong>${nombreArchivo}</strong>?<br><br>` +
-        `<button onclick="window.confirmarEliminarFactura()" class="btn-aviso-confirmar">Sí, eliminar</button>
-         <button onclick="document.getElementById('modalAvisoSimple').style.display='none'" class="btn-aviso-cancelar">Cancelar</button>`,
-        "🗑️", false
-      );
-    });
-  }
-
-  window.confirmarEliminarFactura = async function () {
-    document.getElementById("modalAvisoSimple").style.display = "none";
-    await eliminarFacturaEvento(editingId, { db, storage, auth });
+  window.guardarPagosEvento = async function () {
+    await guardarPagos(editingId, { db });
   };
 
   // Alquileres
@@ -962,15 +948,41 @@ Decoración con flores naturales.`;
     if (opcion === "generar") {
       window.abrirModalPresupuesto(evento);
     } else {
-      const input = document.getElementById("presupuestoFileDetalle");
-      input.onchange = async () => {
-        if (!input.files[0]) return;
+      const eventoId = evento.id;
+      const eventoCliente = evento.client;
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".pdf,image/*";
+      input.addEventListener("change", async function () {
+        const file = this.files[0];
+        if (!file) return;
         mostrarAvisoSimple("Subiendo...", "Esperá un momento.", "⏳", false);
-        await subirPresupuestoEvento(evento.id, { storage, db, auth });
-        input.value = "";
-        document.getElementById("modalAvisoSimple").style.display = "none";
-        mostrarAvisoSimple("Listo", "Presupuesto adjuntado correctamente.", "✅");
-      };
+        try {
+          const storageRef = ref(storage, `presupuestos/${eventoId}/${file.name}`);
+          await uploadBytes(storageRef, file);
+          const url = await getDownloadURL(storageRef);
+          await updateDoc(doc(db, "events", eventoId), {
+            presupuestoURL: url,
+            presupuestoNombre: file.name,
+            presupuestoPath: `presupuestos/${eventoId}/${file.name}`,
+          });
+          const enMemoria = (window.allEventsData || []).find(e => e.id === eventoId);
+          if (enMemoria) {
+            enMemoria.presupuestoURL = url;
+            enMemoria.presupuestoNombre = file.name;
+            enMemoria.presupuestoPath = `presupuestos/${eventoId}/${file.name}`;
+          }
+          document.getElementById("modalAvisoSimple").style.display = "none";
+          mostrarAvisoSimple("Listo", "Presupuesto adjuntado correctamente.", "✅");
+          setTimeout(() => {
+            document.getElementById("modalAvisoSimple").style.display = "none";
+            window.abrirModalDetalle(eventoId);
+          }, 1500);
+        } catch (e) {
+          console.error("Error subiendo presupuesto:", e);
+          mostrarAvisoSimple("Error", "No se pudo subir el presupuesto.", "❌");
+        }
+      });
       input.click();
     }
   };

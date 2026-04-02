@@ -1,4 +1,4 @@
-# 🧠 CONTEXTO PARA IA – JOOLI CateringDesk (v4 — actualizado 27/03/2026)
+# 🧠 CONTEXTO PARA IA – JOOLI CateringDesk (v5 — actualizado 01/04/2026)
 
 > Pegá este archivo al inicio de cada chat nuevo para trabajar sin subir el proyecto.
 
@@ -62,7 +62,7 @@ Se usa principalmente desde el **celular**.
 ```
 index.html              ← estructura general + registro del SW al final del body
 manifest.json           ← config PWA
-sw.js                   ← service worker (versión jooli-v6)
+sw.js                   ← service worker (versión jooli-v7)
 
 css/
   base.css              ← variables globales de color y tipografía
@@ -87,7 +87,7 @@ js/
     events-render.js    ← renderizado de tarjetas
     events-jornadas.js  ← lógica de eventos multidia
     events-maps.js      ← integración Google Maps
-    events-budget.js    ← presupuesto/factura/alquileres
+    events-budget.js    ← presupuesto/pagos/alquileres
     events-avisos.js    ← alertas y confirmaciones
     events-utils.js     ← helpers compartidos
 
@@ -140,10 +140,19 @@ export const USUARIOS_MAP = {
 - **Aviso al salir sin guardar**: al tocar Cancelar o ＋ si hay cliente, fecha, lugar o notas cargadas
 - Confirmación visual cuando un evento pasado no fue confirmado
 
+### Tipos de evento disponibles
+- Catering Completo
+- Coffee
+- Almuerzo informal
+- Cena informal
+- Almuerzo formal
+- Cena formal
+- Asado
+
 ### Modal de detalle (mejorado)
 - Información agrupada en bloques visuales con fondo suave
 - Clases: `detail-bloque`, `detail-bloque-fila`, `detail-bloque-icono`, `detail-bloque-texto`
-- Bloques: lugar/horario — dinero/factura — staff/checklist — notas — alquileres — jornadas
+- Bloques: lugar/horario — dinero/pagos — staff/checklist — notas — alquileres — jornadas
 
 ### Jornadas (eventos multidia)
 - Cada jornada tiene fecha, tipo, lugar, invitados, staff, horarios, notas y alquileres
@@ -159,22 +168,24 @@ export const USUARIOS_MAP = {
 - Por evento, con catálogo base reutilizable
 - Exportación PDF
 
-### Administración / Presupuesto
-- Total, saldo, estado de pago, tipo de factura
-- Adjuntos en Firebase Storage
+### Administración / Presupuesto y Pagos
+- Total del evento con máscara de miles al editar (formato `es-AR`)
+- **Pagos parciales**: array `pagos` por evento, cada uno con monto, estado (pendiente/pagado) y factura opcional
+- Adjuntos en Firebase Storage (presupuesto, factura por pago, alquileres)
 - Generación PDF de presupuesto con imagen de fondo
 - Estadísticas por mes (Chart.js)
+- Campo `paid` (cobrado sí/no) se mantiene independiente de los pagos parciales
 
 ### Notificaciones
 - Tiempo real con Firestore `onSnapshot`
 - Sonido, panel, se marcan como leídas automáticamente
 
 ### PWA / Service Worker
-- `sw.js` en versión `jooli-v6`
+- `sw.js` en versión `jooli-v7`
 - Cachea todos los archivos CSS y JS reales del proyecto
 - Firebase, gstatic y googleapis van siempre a la red (nunca se cachean)
 - Registrado en `index.html` al final del `<body>`
-- ⚠️ Cada vez que se suben cambios a GitHub, hay que incrementar `CACHE_NAME` en `sw.js` (jooli-v7, v8...) para que los celulares descarguen los archivos nuevos
+- ⚠️ Cada vez que se suben cambios a GitHub, hay que incrementar `CACHE_NAME` en `sw.js` (jooli-v8, v9...) para que los celulares descarguen los archivos nuevos
 
 ---
 
@@ -190,10 +201,10 @@ Arranca la app, maneja navegación entre secciones (`showSection`), avisa si hay
 Lógica CRUD de eventos. Escucha Firestore → llena `window.allEventsData`. Llama a `actualizarFiltrosMes()` y `rerenderEvents()` en cada cambio. Funciones globales: `mostrarAvisoSimple`, `resetFormConfirmado`, `confirmarEliminarEvento`.
 
 ### `events-form.js`
-`resetForm()`, `getFormData()`, `fillFormForEdit()`. Formatea CUIT.
+`resetForm()`, `getFormData()`, `fillFormForEdit()`. Formatea CUIT. Máscara de miles para el campo `total`. Inicializa pagos al abrir un evento para editar (`window._initPagosForm`).
 
 ### `events-render.js`
-`renderFilteredEvents()` y `createCard()`. Cada tarjeta tiene `data-cliente` y `data-mes` (formato `"2026-04"`). Incluye badge countdown. `registerEventDetailModal()` genera el modal de detalle con bloques visuales.
+`renderFilteredEvents()` y `createCard()`. Cada tarjeta tiene `data-cliente` y `data-mes` (formato `"2026-04"`). Incluye badge countdown. `registerEventDetailModal()` genera el modal de detalle con bloques visuales, incluyendo el bloque de pagos parciales.
 
 ### `events-utils.js`
 Helpers: `formatDate`, `formatDateShort`, `getMonthLabel`, `getCurrentUserName`, `STATUS_COLORS`, `USUARIOS_MAP`.
@@ -203,7 +214,9 @@ Helpers: `formatDate`, `formatDateShort`, `getMonthLabel`, `getCurrentUserName`,
 Usa `window.mostrarAvisoSimple` directamente (no como parámetro).
 
 ### `events-budget.js`
-Presupuesto, factura, alquileres. Subida a Firebase Storage.
+Presupuesto, pagos parciales, alquileres. Subida a Firebase Storage.
+Exporta: `puedeEditarPresupuesto`, `actualizarUIBudget`, `subirPresupuestoEvento`, `eliminarPresupuestoEvento`, `actualizarUIAlquiler`, `subirAlquilerEvento`, `eliminarAlquilerEvento`, `initPagosForm`, `resetPagosForm`, `agregarPago`, `guardarPagos`.
+Expone `window._getPagosEnEdicion()` para que `events.js` pueda leer los pagos al guardar.
 
 ### `events-avisos.js`
 Modal de confirmación de eventos pasados.
@@ -235,13 +248,26 @@ Calendario FullCalendar. Lee eventos de Firestore.
   horaPresentacion: "18:30",
   notes: "...",
   status: "Confirmado",       // Presupuestado / Confirmado / Realizado / Cancelado / Cerrado
-  paid: false,
+  paid: false,                // cobrado total sí/no, independiente de los pagos parciales
   total: 150000,
+  pagos: [                    // array de pagos parciales (puede estar vacío)
+    {
+      id: "pago_1234567890",
+      monto: 50000,
+      estado: "pagado",       // "pendiente" | "pagado"
+      facturaTipo: "B/C",     // "A" | "B/C"
+      facturaNumero: "",
+      facturaURL: "",
+      facturaNombre: "",
+      facturaPath: "",
+    }
+  ],
+  // NOTA: invoiceType, invoiceNumber, facturaURL a nivel raíz pueden existir
+  // en eventos viejos — se ignoran sin problema. Los nuevos usan el array pagos.
   // NOTA: el campo deposit (seña) fue eliminado de la app pero puede existir
   // en eventos viejos de Firestore — se ignora sin problema
-  invoiceType: "B/C",
-  invoiceNumber: "",
-  cuit: "",
+  invoiceType: "B/C",         // legacy — solo en eventos viejos
+  invoiceNumber: "",          // legacy — solo en eventos viejos
   mensajesEnviados: [         // staff asignado al evento
     { nombre: "Juan", estado: "confirmado", telefono: "...", whatsappEnviado: true, categoria: "Mozo" }
   ],
@@ -257,7 +283,6 @@ Calendario FullCalendar. Lee eventos de Firestore.
   presupuestoURL: "",
   presupuestoNombre: "",
   presupuestoPath: "",
-  facturaURL: "",
   createdBy: "Laura",
   createdAt: Timestamp,
 }
@@ -298,23 +323,53 @@ Calendario FullCalendar. Lee eventos de Firestore.
 - `.filtro-estado` / `.filtro-mes` → botones de filtro (mismo estilo visual)
 - `.filtros-mes-wrap` → fila de filtros por mes (oculta si hay un solo mes)
 
+### Adjuntos en formulario (`css/events.css`)
+- `.adjunto-row` → fila flex con gap 6px
+- `.adjunto-select` → ancho fijo 70px
+- `.adjunto-input` → flex 1
+- `.btn-adjunto` → botón 38x38px oscuro
+- `.btn-adjunto--ver` → azul
+- `.btn-adjunto--eliminar` → rojo
+- `.presupuesto-info` → texto gris con nombre del archivo adjunto
+
+### Pagos parciales en formulario (`css/events.css`)
+- `.btn-agregar-pago` → botón dorado para agregar fila de pago
+- `.pago-fila` → contenedor de una fila de pago (fondo suave, border-radius 10px)
+- `.pago-fila-top` → fila flex: monto + estado + eliminar
+- `.pago-monto-input` → input de monto (flex 1)
+- `.pago-estado-select` → select de estado (ancho 130px)
+- `.pago-fila-factura` → fila flex: tipo factura + número + botones adjunto
+- `.pago-factura-tipo` → select tipo (70px)
+- `.pago-factura-numero` → input número (flex 1)
+
 ### Modal de detalle (`css/modals.css`)
 - `.detail-bloque` → bloque con fondo suave (`var(--bg-secondary)`), border-radius 10px
 - `.detail-bloque-fila` → fila flex: icono + texto
 - `.detail-bloque-icono` → ancho fijo 20px
 - `.detail-bloque-texto` → texto del bloque
+- `.detail-pago-fila` → fila de un pago (estado + monto + factura)
+- `.detail-pago-estado--pagado` → verde
+- `.detail-pago-estado--pendiente` → naranja
+- `.detail-pago-monto` → negrita
+- `.detail-pago-factura` → gris
+- `.detail-pago-resumen` → fila con totales cobrado/pendiente separada por línea
+- `.detail-pago-resumen--pagado` → verde
+- `.detail-pago-resumen--pendiente` → naranja
 
 ---
 
 ## ⚠️ DECISIONES TÉCNICAS TOMADAS
 
-- **Cálculo automático de staff eliminado**: el campo "personal necesario" se carga a mano, sin calcular en base a invitados. La lógica que existía en `events.js` fue removida.
+- **Cálculo automático de staff eliminado**: el campo "personal necesario" se carga a mano, sin calcular en base a invitados.
 - **Bug de zona horaria corregido**: todas las comparaciones de fecha usan `new Date().toLocaleDateString("sv").split("T")[0]` en lugar de `new Date().toISOString().split("T")[0]`. El motivo: `toISOString()` devuelve hora UTC y Argentina es UTC-3, lo que causaba que después de las 21hs el "hoy" y el countdown se adelantaran un día. Archivos corregidos: `events-render.js`, `events.js`, `events-form.js`, `events-avisos.js`, `staff.js`, `lista.js`.
 - **Campo `deposit` (seña) eliminado de la app**: los eventos viejos en Firestore pueden tener ese campo pero se ignora sin problema.
+- **Factura única reemplazada por pagos parciales**: los campos `invoiceType`, `invoiceNumber` y `facturaURL` a nivel raíz del evento son legacy (solo en eventos viejos). Los nuevos eventos usan el array `pagos`.
+- **Campo `paid` se mantiene independiente**: es un booleano de "cobrado total" que coexiste con el array de pagos parciales.
+- **Máscara de miles en montos**: los campos `total` y montos de pagos usan `type="text"` con `inputmode="numeric"`. Se formatean con `toLocaleString("es-AR")` al perder el foco y se limpian al enfocar. Se guarda siempre el número limpio en Firestore.
 
 ---
 
-
+## 📋 REGLAS DE TRABAJO
 
 1. **Paso a paso** → nada de cambios gigantes
 2. **Sin romper lo que funciona** → cambios seguros primero
@@ -335,4 +390,4 @@ Apunta a resolver tareas reales del día a día.
 
 ---
 
-*Fin del contexto — v4, actualizado 27/03/2026*
+*Fin del contexto — v5, actualizado 01/04/2026*

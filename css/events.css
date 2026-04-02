@@ -951,6 +951,65 @@
   color: white;
 }
 
+/* ---- Pagos parciales (formulario) ---- */
+.btn-agregar-pago {
+  margin-top: 8px;
+  padding: 9px 16px;
+  background: var(--gold);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-agregar-pago:hover {
+  opacity: 0.85;
+}
+
+.pago-fila {
+  background: var(--bg-secondary, #f5f5f5);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pago-fila-top {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.pago-monto-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.pago-estado-select {
+  width: 130px;
+  flex-shrink: 0;
+}
+
+.pago-fila-factura {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.pago-factura-tipo {
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.pago-factura-numero {
+  flex: 1;
+  min-width: 0;
+}
+
 .fecha-multidia-row {
   display: flex;
   align-items: flex-end;
