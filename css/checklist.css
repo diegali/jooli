@@ -11,7 +11,12 @@
 }
 
 .modal-checklist-title {
+  display: block;
   margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  font-size: 1.05rem;
+  line-height: 1.2;
 }
 
 /* ---- Pestañas ---- */
@@ -36,6 +41,12 @@
   cursor: pointer;
   margin-bottom: -2px;
   transition: color 0.2s, border-color 0.2s;
+}
+
+.tab-bar button {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.4px;
 }
 
 .tab-btn:hover:not(.tab-btn--active) {
@@ -137,7 +148,7 @@
 .checklist-nombre {
   flex: 1;
   font-size: var(--font-size-base);
-  color: #333;
+  color: #333333;
   cursor: pointer;
   user-select: none;
 }
@@ -203,6 +214,8 @@
   margin-bottom: 6px;
   background: #f9f9f9;
   transition: opacity 0.2s;
+  flex-wrap: nowrap;
+  gap: 6px;
 }
 
 .catalogo-item--agregado {
@@ -213,24 +226,10 @@
   font-size: var(--font-size-base);
   color: #333;
   flex: 1;
-}
-
-.btn-agregar-item {
-  background: var(--color-checklist);
-  color: white;
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.btn-agregar-item--ya {
-  background: #b2dfdb;
-  color: #555;
-  cursor: default;
 }
 
 .btn-catalogo-eliminar {
@@ -304,6 +303,8 @@
   color: var(--text-primary);
 }
 
+
+
 .catalogo-buscar {
   margin-bottom: 12px;
 }
@@ -358,6 +359,14 @@
 .btn-pdf-checklist:hover {
   opacity: 0.85;
   color: white;
+}
+
+.btn-panaderia {
+  background: #27ae60;
+}
+
+.btn-panaderia:hover {
+  background: #219a52;
 }
 
 /* ===== Identidad visual de cada checklist ===== */
@@ -510,13 +519,6 @@
   max-width: fit-content;
 }
 
-.modal-checklist-title {
-  margin: 0;
-  font-size: 1.05rem;
-  line-height: 1.2;
-  font-weight: 700;
-}
-
 .checklist-titulo-secundario {
   margin: 6px 0 0 0;
   font-size: 0.9rem;
@@ -526,7 +528,8 @@
 }
 
 .modal-checklist-header {
-  display: block; /* 🔥 clave */
+  display: block;
+  /* 🔥 clave */
   margin-bottom: 14px;
 }
 
@@ -537,17 +540,11 @@
   margin-bottom: 6px;
 }
 
-.modal-checklist-title {
-  display: block;
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 700;
-}
-
 .btn-close-modal--header {
   position: static;
   margin: 0;
 }
+
 /* ===== Pestaña Cámara ===== */
 .camara-header {
   margin-bottom: 16px;
@@ -639,9 +636,26 @@
   text-align: center;
 }
 
-.camara-stock--ok { color: #27ae60; }
-.camara-stock--bajo { color: #e67e22; }
-.camara-stock--vacio { color: #c0392b; }
+.camara-stock::-webkit-inner-spin-button,
+.camara-stock::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.camara-stock[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.camara-stock--ok {
+  color: #27ae60;
+}
+
+.camara-stock--bajo {
+  color: #e67e22;
+}
+
+.camara-stock--vacio {
+  color: #c0392b;
+}
 
 .camara-item-agregar {
   display: flex;
@@ -729,18 +743,10 @@
   padding: 0;
 }
 
-.btn-camara-mini:hover {
-  background: #d35400;
-}
-
 .btn-camara-mini--ya {
   background: #b2dfdb;
   color: #555;
   cursor: default;
-}
-
-.btn-camara-mini--ya:hover {
-  background: #b2dfdb;
 }
 
 .btn-camara-mini--sin-stock {
@@ -749,6 +755,126 @@
   cursor: not-allowed;
 }
 
+.btn-camara-mini:hover {
+  background: #d35400;
+}
+
+.btn-camara-mini--ya:hover {
+  background: #b2dfdb;
+}
+
 .btn-camara-mini--sin-stock:hover {
   background: #ddd;
+}
+
+.btn-general-mini {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0 !important;
+  border: none;
+  border-radius: 50%;
+  background: #2d6cdf;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.btn-general-mini:hover {
+  transform: scale(1.05);
+}
+
+.btn-general-mini:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.btn-general-mini--ya {
+  background: #7fbf90;
+  color: #fff;
+}
+
+.btn-general-mini--bloqueado {
+  background: #bfc6cf;
+  color: #fff;
+}
+
+.btn-general-mini--sin-stock {
+  background: #ddd;
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+.btn-general-mini--sin-stock:hover {
+  background: #ddd;
+  transform: none;
+}
+
+/* 🔹 Bloque checklist (items ya agregados) */
+.checklist-bloque {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+/* 🔸 Bloque catálogo (para agregar) */
+.catalogo-bloque {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 10px;
+  border: 1px dashed #d1d5db;
+}
+
+/* Título más separado */
+.checklist-agregar-titulo {
+  margin-top: 10px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.checklist-titulo-bloque {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  opacity: 0.7;
+  letter-spacing: 0.5px;
+}
+
+.checklist-bloque .checklist-titulo-bloque {
+  color: #374151;
+}
+
+.catalogo-bloque .checklist-titulo-bloque {
+  color: #6b7280;
+}
+
+.btn-panaderia-mini {
+  border: none;
+  background: #27ae60;
+  color: white;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-panaderia-mini:hover {
+  opacity: 0.9;
+}
+
+.btn-panaderia-mini--enviado {
+  background: #95a5a6;
 }

@@ -219,9 +219,12 @@ async function saveEvent() {
 
 async function updateExistingEvent() {
   if (!editingId) return;
-
   const eventData = getFormData();
   if (!validarEventData(eventData)) return;
+
+  // Guardar estado anterior para detectar cambio a Realizado
+  const eventoAnterior = window.allEventsData?.find((e) => e.id === editingId);
+  const estadoAnterior = eventoAnterior?.status || "";
 
   const userName = getCurrentUserName();
   const userEmail = auth.currentUser?.email;
@@ -240,6 +243,15 @@ async function updateExistingEvent() {
 
   try {
     await updateDoc(doc(db, "events", editingId), eventData);
+
+    // Si el evento pasa a Realizado, devolver stock de vajilla
+    if (eventData.status === "Realizado" && estadoAnterior !== "Realizado") {
+      const checklist = eventoAnterior?.checklist || [];
+      const itemsVajilla = checklist.filter((i) => i.categoria === "VAJILLA");
+      for (const item of itemsVajilla) {
+        await window.devolverStockVajilla?.(item.nombre, Number(item.cantidad) || 1);
+      }
+    }
     await addDoc(collection(db, "notificaciones"), {
       mensaje: `${userName} modificó el evento "${eventData.client}"${eventData.date ? ` del ${formatDateShort(eventData.date)}` : ""}`,
       leida: false,

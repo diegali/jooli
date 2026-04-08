@@ -114,10 +114,14 @@ function initCatalogoDelegado() {
   modal.addEventListener("click", async (e) => {
     const btnAgregar = e.target.closest('[data-action="agregar-catalogo"]');
     if (btnAgregar) {
+      const id = btnAgregar.dataset.id || "";
       const nombre = btnAgregar.dataset.nombre || "";
       const categoria = btnAgregar.dataset.categoria || "";
+      const inputCantidad = document.getElementById(`general-cantidad-${id}`);
+      const cantidad = Math.max(1, Number(inputCantidad?.value || 1));
+
       if (nombre) {
-        await agregarChecklistItem(nombre, categoria);
+        await agregarChecklistItem(nombre, categoria, cantidad);
       }
       return;
     }
@@ -162,6 +166,8 @@ function cargarCatalogo() {
     if (modal && modal.style.display === "flex") {
       if (pestanaActiva === "catalogo") {
         renderPestanaCatalogo();
+      } else if (pestanaActiva === "vajilla") {
+        renderPestanaVajilla();
       } else {
         renderPestanaChecklist();
       }
@@ -198,6 +204,13 @@ function initChecklistDelegado() {
         Number(cantidadInput.dataset.index),
         cantidadInput.value
       );
+      return;
+    }
+    const stockDirectoVajilla = e.target.closest('[data-action="editar-stock-vajilla"]');
+    if (stockDirectoVajilla) {
+      const nuevoStock = Math.max(0, Number(stockDirectoVajilla.value) || 0);
+      await ajustarStockVajillaDirecto(stockDirectoVajilla.dataset.id, nuevoStock);
+      return;
     }
   });
 
@@ -236,6 +249,23 @@ function initControlesListaDelegados() {
     const btnPdf = e.target.closest('[data-action="pdf-checklist"]');
     if (btnPdf) {
       window.generarPDFChecklist();
+      return;
+    }
+
+    const btnSumarVajilla = e.target.closest('[data-action="sumar-stock-vajilla"]');
+    if (btnSumarVajilla) {
+      await ajustarStockVajilla(btnSumarVajilla.dataset.id, 1);
+      return;
+    }
+    const btnRestarVajilla = e.target.closest('[data-action="restar-stock-vajilla"]');
+    if (btnRestarVajilla) {
+      await ajustarStockVajilla(btnRestarVajilla.dataset.id, -1);
+      return;
+    }
+    const btnGuardarVajilla = e.target.closest('[data-action="guardar-vajilla-nuevo"]');
+    if (btnGuardarVajilla) {
+      await guardarItemVajillaDesdeForm();
+      return;
     }
   });
 
@@ -294,14 +324,20 @@ window.cambiarPestanaChecklist = function (cual) {
 function actualizarPestanas() {
   const btnChecklist = document.getElementById("tabBtnChecklist");
   const btnCatalogo = document.getElementById("tabBtnCatalogo");
+  const btnVajilla = document.getElementById("tabBtnVajilla");
 
   if (btnChecklist) btnChecklist.classList.toggle("tab-btn--active", pestanaActiva === "checklist");
   if (btnCatalogo) {
     btnCatalogo.style.display = window.checklistSoloLectura ? "none" : "";
     btnCatalogo.classList.toggle("tab-btn--active", pestanaActiva === "catalogo");
   }
+  if (btnVajilla) {
+    btnVajilla.classList.toggle("tab-btn--active", pestanaActiva === "vajilla");
+  }
   if (pestanaActiva === "checklist") {
     renderPestanaChecklist();
+  } else if (pestanaActiva === "vajilla") {
+    renderPestanaVajilla();
   } else {
     renderPestanaCatalogo();
   }
@@ -340,6 +376,10 @@ function renderPestanaChecklist() {
   `;
 
   // ---- Lista de ítems del evento ----
+
+  html += `<div class="checklist-bloque">`;
+  html += `<div class="checklist-titulo-bloque">📦 Checklist del evento</div>`;
+
   if (total === 0) {
     html += `<p class="checklist-vacio">No hay ítems en este checklist todavía.<br>Agregá desde el catálogo 👇</p>`;
   } else {
@@ -347,24 +387,24 @@ function renderPestanaChecklist() {
 
     Object.entries(grupos).forEach(([categoria, items]) => {
       html += `<div class="checklist-grupo">
-        <div class="checklist-categoria">${categoria}</div>`;
+      <div class="checklist-categoria">${categoria}</div>`;
 
       items.forEach((item) => {
         const index = checklist.indexOf(item);
         const soloLectura = window.checklistSoloLectura;
 
         html += `
-    <div class="checklist-item ${item.preparado ? "checklist-item--listo" : ""}">
-      <input
-        type="checkbox"
-        class="checklist-check"
-        data-action="toggle-checklist"
-        data-index="${index}"
-        ${item.preparado ? "checked" : ""}
-        ${soloLectura ? "disabled" : ""}
-      >
+        <div class="checklist-item ${item.preparado ? "checklist-item--listo" : ""}">
+          <input
+            type="checkbox"
+            class="checklist-check"
+            data-action="toggle-checklist"
+            data-index="${index}"
+            ${item.preparado ? "checked" : ""}
+            ${soloLectura ? "disabled" : ""}
+          >
 
-      <span
+          <span
             class="checklist-nombre"
             ${soloLectura ? "" : `data-action="toggle-checklist" data-index="${index}"`}
           >
@@ -384,39 +424,41 @@ function renderPestanaChecklist() {
           ${soloLectura
             ? ""
             : `<button
-                  type="button"
-                  class="checklist-btn-quitar"
-                  data-action="eliminar-checklist"
-                  data-index="${index}">
-                  ✕
-                </button>`
+                type="button"
+                class="checklist-btn-quitar"
+                data-action="eliminar-checklist"
+                data-index="${index}">
+                ✕
+              </button>`
           }
         </div>
-        `;
+      `;
       });
 
       html += `</div>`;
     });
   }
 
-  // ---- Catálogo para agregar ítems ----
+  html += `</div>`;
+
   // ---- Catálogo para agregar ítems ----
   if (!window.checklistSoloLectura) {
+    html += `<div class="catalogo-bloque">`;
+    html += `<div class="checklist-titulo-bloque">➕ Catálogo disponible</div>`;
+
     html += `
     <div class="checklist-agregar-titulo">➕ Agregar del catálogo</div>
-  <div class="catalogo-buscar">
-    <input
-      type="text"
-      id="buscarCatalogo"
-      placeholder="🔍 Buscar ítem..."
-      class="catalogo-buscar-input"
-      data-action="buscar-catalogo"
-    >
-  </div>
-`;
-  }
+    <div class="catalogo-buscar">
+      <input
+        type="text"
+        id="buscarCatalogo"
+        placeholder="🔍 Buscar ítem..."
+        class="catalogo-buscar-input"
+        data-action="buscar-catalogo"
+      >
+    </div>
+  `;
 
-  if (!window.checklistSoloLectura) {
     html += renderCatalogoHTML({
       items: catalogoBase,
       emptyMessage:
@@ -424,24 +466,49 @@ function renderPestanaChecklist() {
       renderItem: (item) => {
         const yaAgregado = checklist.some((i) => i.nombre === item.nombre);
 
+        if (item.categoria === "VAJILLA") {
+          const stock = item.stock || 0;
+          const stockClass = stock === 0 ? "camara-stock--vacio" : stock <= 3 ? "camara-stock--bajo" : "camara-stock--ok";
+          return `
+            <div class="catalogo-item ${yaAgregado ? "catalogo-item--agregado" : ""}">
+              <span class="catalogo-item-nombre">${item.nombre}</span>
+              <span class="camara-stock-badge ${stockClass}">🍽 ${stock}</span>
+              ${yaAgregado
+              ? `<span class="btn-general-mini btn-general-mini--ya">✔</span>`
+              : stock === 0
+                ? `<span class="btn-general-mini btn-general-mini--sin-stock">✕</span>`
+                : `<input type="number" id="general-cantidad-${item.id}"
+                     class="camara-cantidad-input camara-cantidad-input--mini" value="1" min="1" max="${stock}">
+                   <button type="button" class="btn-general-mini"
+                     data-action="agregar-catalogo"
+                     data-id="${item.id}" data-nombre="${item.nombre}" data-categoria="VAJILLA">↑</button>`
+            }
+            </div>
+          `;
+        }
+
         return `
-          <div class="catalogo-item ${yaAgregado ? "catalogo-item--agregado" : ""}">
-            <span class="catalogo-item-nombre">${item.nombre}</span>
-            <button
-              type="button"
-              class="btn-agregar-item ${yaAgregado ? "btn-agregar-item--ya" : ""}"
-              data-action="agregar-catalogo"
-              data-nombre="${item.nombre}"
-              data-categoria="${item.categoria || ""}"
-              ${yaAgregado ? "disabled" : ""}>
-              ${yaAgregado ? "✔ Agregado" : "Agregar"}
-            </button>
-          </div>
-        `;
+        <div class="catalogo-item ${yaAgregado ? "catalogo-item--agregado" : ""}">
+          <span class="catalogo-item-nombre">${item.nombre}</span>
+          ${yaAgregado
+            ? `<span class="btn-general-mini btn-general-mini--ya">✔</span>`
+            : `
+              <input type="number" id="general-cantidad-${item.id}"
+                class="camara-cantidad-input camara-cantidad-input--mini" value="1" min="1">
+              <button type="button" class="btn-general-mini"
+                data-action="agregar-catalogo"
+                data-id="${item.id}" data-nombre="${item.nombre}" data-categoria="${item.categoria || ""}">
+                ↑
+              </button>
+            `
+          }
+        </div>
+      `;
       },
     });
-  }
 
+    html += `</div>`;
+  }
   cont.innerHTML = html;
 }
 
@@ -556,7 +623,10 @@ function renderPestanaCatalogo() {
   const cont = document.getElementById("checklistContenido");
   if (!cont) return;
 
-  const categoriasExistentes = [...new Set(catalogoBase.map((i) => i.categoria))].sort();
+  const categoriasExistentes = [...new Set(catalogoBase.map((i) => i.categoria))]
+    .filter((c) => c !== "VAJILLA")
+    .sort();
+  const catalogoSinVajilla = catalogoBase.filter((i) => i.categoria !== "VAJILLA");
 
   const opcionesSelect = categoriasExistentes
     .map((c) => `<option value="${c}">${c}</option>`)
@@ -610,7 +680,7 @@ function renderPestanaCatalogo() {
   `;
 
   html += renderCatalogoHTML({
-    items: catalogoBase,
+    items: catalogoSinVajilla,
     emptyMessage: "El catálogo está vacío. ¡Agregá el primer ítem!",
     renderItem: (item) => `
       <div class="catalogo-item">
@@ -664,6 +734,10 @@ async function agregarAlCatalogo() {
 
   if (!nombre) {
     window.mostrarAvisoSimple("Faltan datos", "Escribí el nombre del ítem.", "⚠️");
+    return;
+  }
+  if (["VAJILLA"].includes(categoria)) {
+    window.mostrarAvisoSimple("Categoría reservada", "Los ítems de vajilla se agregan desde la pestaña 🍽 Vajilla.", "🍽");
     return;
   }
 
@@ -771,9 +845,15 @@ function initCatalogoCocinaDelegate() {
   modal.addEventListener("click", async (e) => {
     const btnAgregar = e.target.closest('[data-action="agregar-catalogo-cocina"]');
     if (btnAgregar) {
+      const id = btnAgregar.dataset.id || "";
       const nombre = btnAgregar.dataset.nombre || "";
       const categoria = btnAgregar.dataset.categoria || "";
-      if (nombre) await agregarChecklistCocinaItem(nombre, categoria);
+      const inputCantidad = document.getElementById(`cocina-cantidad-${id}`);
+      const cantidad = Math.max(1, Number(inputCantidad?.value || 1));
+
+      if (nombre) {
+        await agregarChecklistCocinaItem(nombre, categoria, cantidad);
+      }
       return;
     }
     const btnEliminar = e.target.closest('[data-action="eliminar-catalogo-cocina"]');
@@ -853,6 +933,11 @@ function initControlesCocinaDelegate() {
     const btnPdf = e.target.closest('[data-action="pdf-checklist-cocina"]');
     if (btnPdf) {
       window.generarPDFChecklistCocina();
+      return;
+    }
+    const btnPanaderia = e.target.closest('[data-action="whatsapp-panaderia"]');
+    if (btnPanaderia) {
+      enviarPedidoPanaderia();
       return;
     }
     const btnSumarStock = e.target.closest('[data-action="sumar-stock"]');
@@ -992,6 +1077,44 @@ function actualizarPestanasCocina() {
 // ===============================
 // CHECKLIST COCINA — PESTAÑA 1
 // ===============================
+
+function enviarPedidoPanaderia() {
+  const evento = window.eventoChecklistCocinaActual;
+  if (!evento) return;
+
+  const itemsPanaderia = (evento.checklistCocina || []).filter(
+    (i) => i.categoria?.toUpperCase() === "PANADERÍA" || i.categoria?.toUpperCase() === "PANADERIA"
+  );
+
+  if (itemsPanaderia.length === 0) {
+    window.mostrarAvisoSimple(
+      "Sin ítems",
+      "No hay ítems de panadería en este checklist.",
+      "🥖"
+    );
+    return;
+  }
+
+  const fecha = evento.date
+    ? new Date(evento.date + "T12:00:00").toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })
+    : "fecha a confirmar";
+
+  let mensaje = `Hola! 👋 Soy de *JOOLI Catering*.\n\nNecesitamos el siguiente pedido de panadería para el *${fecha}*:\n\n`;
+  itemsPanaderia.forEach((item) => {
+    mensaje += `• ${item.nombre}: *${item.cantidad}*\n`;
+  });
+  mensaje += `\nMuchas gracias!`;
+
+  const url = `https://wa.me/5493517371756?text=${encodeURIComponent(mensaje)}`;
+  const link = document.createElement("a");
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 function renderPestanaChecklistCocina() {
   const cont = document.getElementById("checklistCocinaContenido");
   if (!cont) return;
@@ -1019,57 +1142,85 @@ function renderPestanaChecklistCocina() {
     </div>
   `;
 
+  html += `<div class="checklist-bloque">`;
+  html += `<div class="checklist-titulo-bloque">🍳 Checklist de cocina</div>`;
+
   if (total === 0) {
     html += `<p class="checklist-vacio">No hay ítems en este checklist todavía.<br>Agregá desde el catálogo 👇</p>`;
   } else {
     const grupos = agruparPorCategoria(checklist);
     Object.entries(grupos).forEach(([categoria, items]) => {
-      html += `<div class="checklist-grupo"><div class="checklist-categoria">${categoria}</div>`;
+
+      const esPanaderia = categoria.toUpperCase().includes("PANADER");
+      const hayItems = items && items.length > 0;
+
+      html += `
+    <div class="checklist-grupo">
+      <div class="checklist-categoria" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>${categoria}</span>
+
+        ${(esPanaderia && hayItems) ? `
+          <button type="button"
+            class="btn-panaderia-mini ${evento.panaderiaEnviada ? "btn-panaderia-mini--enviado" : ""}"
+            data-action="whatsapp-panaderia"
+            ${evento.panaderiaEnviada ? "disabled" : ""}>
+            🥖
+          </button>
+        ` : ""}
+      </div>
+  `;
       items.forEach((item) => {
         const index = checklist.indexOf(item);
         const soloLectura = window.checklistCocinaSoloLectura;
         html += `
-          <div class="checklist-item ${item.preparado ? "checklist-item--listo" : ""}">
-            <input type="checkbox" class="checklist-check"
-              data-action="toggle-checklist-cocina" data-index="${index}"
-              ${item.preparado ? "checked" : ""} ${soloLectura ? "disabled" : ""}>
-            <span class="checklist-nombre"
-              ${soloLectura ? "" : `data-action="toggle-checklist-cocina" data-index="${index}"`}>
-              ${item.nombre}
-            </span>
-            <input type="number" class="checklist-cantidad"
-              data-action="cantidad-checklist-cocina" data-index="${index}"
-              value="${item.cantidad}" min="1" ${soloLectura ? "disabled" : ""}>
-            ${soloLectura ? "" : `<button type="button" class="checklist-btn-quitar"
-              data-action="eliminar-checklist-cocina" data-index="${index}">✕</button>`}
-          </div>
-        `;
+        <div class="checklist-item ${item.preparado ? "checklist-item--listo" : ""}">
+          <input type="checkbox" class="checklist-check"
+            data-action="toggle-checklist-cocina" data-index="${index}"
+            ${item.preparado ? "checked" : ""} ${soloLectura ? "disabled" : ""}>
+          <span class="checklist-nombre"
+            ${soloLectura ? "" : `data-action="toggle-checklist-cocina" data-index="${index}"`}>
+            ${item.nombre}
+          </span>
+          <input type="number" class="checklist-cantidad"
+            data-action="cantidad-checklist-cocina" data-index="${index}"
+            value="${item.cantidad}" min="1" ${soloLectura ? "disabled" : ""}>
+          ${soloLectura ? "" : `<button type="button" class="checklist-btn-quitar"
+            data-action="eliminar-checklist-cocina" data-index="${index}">✕</button>`}
+        </div>
+      `;
       });
       html += `</div>`;
     });
   }
 
+  html += `</div>`;
+
   if (!window.checklistCocinaSoloLectura) {
+    html += `<div class="catalogo-bloque">`;
+    html += `<div class="checklist-titulo-bloque">➕ Catálogo disponible</div>`;
+
     html += `
-      <div class="checklist-agregar-titulo">➕ Agregar del catálogo</div>
-      <div class="catalogo-buscar">
-        <input type="text" id="buscarCatalogoCocina" placeholder="🔍 Buscar ítem..."
-          class="catalogo-buscar-input" data-action="buscar-catalogo-cocina">
-      </div>
-    `;
+    <div class="checklist-agregar-titulo">➕ Agregar del catálogo</div>
+    <div class="catalogo-buscar">
+      <input type="text" id="buscarCatalogoCocina" placeholder="🔍 Buscar ítem..."
+        class="catalogo-buscar-input" data-action="buscar-catalogo-cocina">
+    </div>
+  `;
+
     html += renderCatalogoHTML({
       items: catalogoBaseCocina,
       emptyMessage: 'El catálogo está vacío. Añadí ítems desde la pestaña <strong>Catálogo base</strong>.',
       renderItem: (item) => {
         const yaAgregado = checklist.some((i) => i.nombre === item.nombre);
+
         if (item.categoria === "CAMARA") {
           const stock = item.stock || 0;
           const stockClass = stock === 0 ? "camara-stock--vacio" : stock <= 3 ? "camara-stock--bajo" : "camara-stock--ok";
           return `
-            <div class="catalogo-item ${yaAgregado ? "catalogo-item--agregado" : ""}">
-              <span class="catalogo-item-nombre">${item.nombre}</span>
-              <span class="camara-stock-badge ${stockClass}">🧊 ${stock}</span>
-              ${yaAgregado
+          <div class="catalogo-item ${yaAgregado ? "catalogo-item--agregado" : ""}">
+            <span class="catalogo-item-nombre">${item.nombre}</span>
+            <span class="camara-stock-badge ${stockClass}">🧊 ${stock}</span>
+            ${yaAgregado
               ? `<span class="btn-camara-mini btn-camara-mini--ya">✔</span>`
               : stock === 0
                 ? `<span class="btn-camara-mini btn-camara-mini--sin-stock">✕</span>`
@@ -1077,23 +1228,41 @@ function renderPestanaChecklistCocina() {
                    <button type="button" class="btn-camara-mini" data-action="agregar-camara-al-checklist"
                      data-id="${item.id}" data-nombre="${item.nombre}" data-categoria="CAMARA">↑</button>`
             }
-            </div>
-          `;
-        }
-        return `
-          <div class="catalogo-item ${yaAgregado ? "catalogo-item--agregado" : ""}">
-            <span class="catalogo-item-nombre">${item.nombre}</span>
-            <button type="button"
-              class="btn-agregar-item ${yaAgregado ? "btn-agregar-item--ya" : ""}"
-              data-action="agregar-catalogo-cocina"
-              data-nombre="${item.nombre}" data-categoria="${item.categoria || ""}"
-              ${yaAgregado ? "disabled" : ""}>
-              ${yaAgregado ? "✔ Agregado" : "Agregar"}
-            </button>
           </div>
         `;
+        }
+
+        return `
+        <div class="catalogo-item ${yaAgregado ? "catalogo-item--agregado" : ""}">
+          <span class="catalogo-item-nombre">${item.nombre}</span>
+
+          ${yaAgregado
+            ? `<span class="btn-camara-mini btn-camara-mini--ya">✔</span>`
+            : `
+              <input
+                type="number"
+                id="cocina-cantidad-${item.id}"
+                class="camara-cantidad-input camara-cantidad-input--mini"
+                value="1"
+                min="1"
+              >
+              <button
+                type="button"
+                class="btn-camara-mini"
+                data-action="agregar-catalogo-cocina"
+                data-id="${item.id}"
+                data-nombre="${item.nombre}"
+                data-categoria="${item.categoria || ""}">
+                ↑
+              </button>
+            `
+          }
+        </div>
+      `;
       },
     });
+
+    html += `</div>`;
   }
 
   cont.innerHTML = html;
@@ -1561,18 +1730,153 @@ window.generarPDFChecklistCocina = function () {
 // ===============================
 // ACCIONES — CHECKLIST DEL EVENTO
 // ===============================
-async function agregarChecklistItem(nombre, categoria) {
+
+// ===============================
+// PESTAÑA VAJILLA
+// ===============================
+function renderPestanaVajilla() {
+  const cont = document.getElementById("checklistContenido");
+  if (!cont) return;
+
+  const itemsVajilla = catalogoBase.filter((i) => i.categoria === "VAJILLA");
+  const checklist = window.eventoChecklistActual?.checklist || [];
+
+  let html = `
+    <div class="camara-header">
+      <div class="camara-titulo">🍽 Stock de vajilla</div>
+      <div class="camara-subtitulo">Tocá + / − para ajustar el stock disponible</div>
+    </div>
+  `;
+
+  if (itemsVajilla.length === 0) {
+    html += `<p class="checklist-vacio">No hay ítems de vajilla todavía.<br>Agregá ítems con categoría <strong>VAJILLA</strong> desde el Catálogo base.</p>`;
+  } else {
+    html += `<div class="camara-lista">`;
+    itemsVajilla.forEach((item) => {
+      const stock = item.stock || 0;
+      const stockClass = stock === 0 ? "camara-stock--vacio" : stock <= 3 ? "camara-stock--bajo" : "camara-stock--ok";
+      html += `
+        <div class="camara-item">
+          <div class="camara-item-nombre">${item.nombre}</div>
+          <div class="camara-item-controles">
+            <button type="button" class="btn-stock btn-stock--restar" data-action="restar-stock-vajilla" data-id="${item.id}">−</button>
+            <input type="number" class="camara-stock ${stockClass}"
+              data-action="editar-stock-vajilla" data-id="${item.id}"
+              value="${stock}" min="0">
+            <button type="button" class="btn-stock btn-stock--sumar" data-action="sumar-stock-vajilla" data-id="${item.id}">+</button>
+          </div>
+          ${!window.checklistSoloLectura ? `
+          <button type="button" class="btn-catalogo-eliminar"
+            data-action="eliminar-catalogo" data-id="${item.id}">🗑</button>` : ""}
+        </div>
+      `;
+    });
+    html += `</div>`;
+  }
+
+  if (!window.checklistSoloLectura) {
+    html += `
+      <div class="camara-nuevo">
+        <div class="catalogo-nuevo-titulo">Agregar ítem de vajilla</div>
+        <div class="camara-nuevo-fila">
+          <input type="text" id="vajillaNuevoNombre" placeholder="Nombre (ej: PLATOS, COPAS...)"
+            class="catalogo-nuevo-input catalogo-nuevo-input--nombre">
+          <input type="number" id="vajillaNuevoStock" placeholder="Cantidad" min="0"
+            class="catalogo-nuevo-input" style="max-width:90px;">
+          <button type="button" class="btn-catalogo-agregar" data-action="guardar-vajilla-nuevo">
+            + Agregar
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  cont.innerHTML = html;
+}
+
+async function ajustarStockVajilla(itemId, delta) {
+  const item = catalogoBase.find((i) => i.id === itemId);
+  if (!item) return;
+  const nuevoStock = Math.max(0, (item.stock || 0) + delta);
+  try {
+    await updateDoc(doc(db, "catalogoChecklist", itemId), { stock: nuevoStock });
+  } catch (e) {
+    console.error("Error al ajustar stock vajilla:", e);
+  }
+}
+
+window.devolverStockVajilla = async function (nombre, cantidad) {
+  const item = catalogoBase.find((i) => i.nombre === nombre && i.categoria === "VAJILLA");
+  if (!item) return;
+  const nuevoStock = (item.stock || 0) + cantidad;
+  try {
+    await updateDoc(doc(db, "catalogoChecklist", item.id), { stock: nuevoStock });
+  } catch (e) {
+    console.error("Error al devolver stock vajilla:", e);
+  }
+};
+
+async function ajustarStockVajillaDirecto(itemId, nuevoStock) {
+  try {
+    await updateDoc(doc(db, "catalogoChecklist", itemId), { stock: nuevoStock });
+  } catch (e) {
+    console.error("Error al editar stock vajilla directo:", e);
+  }
+}
+
+async function guardarItemVajillaDesdeForm() {
+  const nombreEl = document.getElementById("vajillaNuevoNombre");
+  const stockEl = document.getElementById("vajillaNuevoStock");
+  const nombre = nombreEl?.value.trim().toUpperCase();
+  const stock = Number(stockEl?.value) || 0;
+
+  if (!nombre) {
+    window.mostrarAvisoSimple("Faltan datos", "Escribí el nombre del ítem.", "⚠️");
+    return;
+  }
+  const yaExiste = catalogoBase.some(
+    (i) => i.nombre.toLowerCase() === nombre.toLowerCase() && i.categoria === "VAJILLA"
+  );
+  if (yaExiste) {
+    window.mostrarAvisoSimple("Ítem duplicado", `<strong>${nombre}</strong> ya existe en vajilla.`, "⚠️");
+    return;
+  }
+  try {
+    await addDoc(collection(db, "catalogoChecklist"), { nombre, categoria: "VAJILLA", stock });
+    if (nombreEl) nombreEl.value = "";
+    if (stockEl) stockEl.value = "";
+  } catch (e) {
+    console.error("Error al agregar ítem a vajilla:", e);
+  }
+}
+
+async function agregarChecklistItem(nombre, categoria, cantidad = 1) {
   const evento = window.eventoChecklistActual;
   if (!evento) return;
   if (!evento.checklist) evento.checklist = [];
 
   if (evento.checklist.some((i) => i.nombre === nombre)) return;
 
-  evento.checklist.push({ nombre, categoria, cantidad: 1, preparado: false });
+  if (categoria === "VAJILLA") {
+    const itemVajilla = catalogoBase.find((i) => i.nombre === nombre && i.categoria === "VAJILLA");
+    if (itemVajilla) {
+      const stockActual = itemVajilla.stock || 0;
+      if (cantidad > stockActual) {
+        window.mostrarAvisoSimple(
+          "Stock insuficiente",
+          `Solo hay <strong>${stockActual}</strong> unidad${stockActual !== 1 ? "es" : ""} de <strong>${nombre}</strong> disponible${stockActual !== 1 ? "s" : ""}.`,
+          "🍽"
+        );
+        return;
+      }
+      await ajustarStockVajilla(itemVajilla.id, -Number(cantidad));
+    }
+  }
+
+  evento.checklist.push({ nombre, categoria, cantidad: Number(cantidad) || 1, preparado: false });
   await guardarChecklistEnFirestore(evento);
   renderPestanaChecklist();
 }
-
 async function toggleChecklistItem(index) {
   const evento = window.eventoChecklistActual;
   if (!evento || !evento.checklist?.[index]) return;
@@ -1586,13 +1890,43 @@ async function cambiarCantidadChecklist(index, valor) {
   const evento = window.eventoChecklistActual;
   if (!evento || !evento.checklist?.[index]) return;
 
-  evento.checklist[index].cantidad = Number(valor) || 1;
+  const item = evento.checklist[index];
+  const nuevaCantidad = Number(valor) || 1;
+
+  if (item.categoria === "VAJILLA") {
+    const itemVajilla = catalogoBase.find((i) => i.nombre === item.nombre && i.categoria === "VAJILLA");
+    if (itemVajilla) {
+      const cantidadAnterior = item.cantidad || 1;
+      const diferencia = nuevaCantidad - cantidadAnterior;
+      const stockActual = itemVajilla.stock || 0;
+      if (diferencia > stockActual) {
+        window.mostrarAvisoSimple(
+          "Stock insuficiente",
+          `Solo hay <strong>${stockActual}</strong> unidad${stockActual !== 1 ? "es" : ""} disponible${stockActual !== 1 ? "s" : ""} de <strong>${item.nombre}</strong>.`,
+          "🍽"
+        );
+        renderPestanaChecklist();
+        return;
+      }
+      await ajustarStockVajilla(itemVajilla.id, -diferencia);
+    }
+  }
+
+  evento.checklist[index].cantidad = nuevaCantidad;
   await guardarChecklistEnFirestore(evento);
 }
 
 async function eliminarChecklistItem(index) {
   const evento = window.eventoChecklistActual;
   if (!evento || !evento.checklist) return;
+
+  const item = evento.checklist[index];
+  if (item && item.categoria === "VAJILLA") {
+    const itemVajilla = catalogoBase.find((i) => i.nombre === item.nombre && i.categoria === "VAJILLA");
+    if (itemVajilla) {
+      await ajustarStockVajilla(itemVajilla.id, Number(item.cantidad) || 1);
+    }
+  }
 
   evento.checklist.splice(index, 1);
   await guardarChecklistEnFirestore(evento);

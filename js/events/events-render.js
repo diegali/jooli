@@ -193,6 +193,15 @@ function createCard(evento, id) {
   `;
 }
 
+window.ocultarModalDetallePorChecklist = function () {
+  const modalDetalle = document.getElementById("modalDetalleEvento");
+  if (!modalDetalle) return;
+
+  modalDetalle.style.visibility = "hidden";
+  modalDetalle.style.pointerEvents = "none";
+  modalDetalle.dataset.ocultoPorChecklist = "true";
+};
+
 export function registerEventDetailModal(deps) {
   const {
     getAllEvents,
@@ -346,13 +355,29 @@ export function registerEventDetailModal(deps) {
             if (total === 0) return `
                   <div class="detail-inline-accion">
                     <div>📦 Sin checklist armado</div>
-                    <button onclick="window.cerrarModalDetalle(); window._detalleEventoAbierto='${eventoId}'; window.abrirSelectorChecklist()" class="btn-detail-inline">Armar</button>
-                  </div>`;
+                    <button onclick="window._volverADetalleDesdeChecklist = true; window._detalleEventoAbierto='${eventoId}'; window.ocultarModalDetallePorChecklist(); window.abrirModalChecklist && window.abrirModalChecklist('${eventoId}')" class="btn-detail-inline">Armar</button>
+                    </div>`;
             const color = preparados === total ? "#27ae60" : preparados === 0 ? "#c0392b" : "#e67e22";
             return `
                   <div class="detail-inline-accion">
                     <div>📦 <span style="color:${color}; font-weight:600;">${preparados}/${total} ítems preparados</span></div>
-                    <button onclick="window._detalleEventoAbierto='${eventoId}'; window.abrirSelectorChecklist()" class="btn-detail-inline">Ver</button>
+                    <button onclick="window._volverADetalleDesdeChecklist = true; window._detalleEventoAbierto='${eventoId}'; window.ocultarModalDetallePorChecklist(); window.abrirModalChecklist && window.abrirModalChecklist('${eventoId}')" class="btn-detail-inline">Ver</button>
+                  </div>`;
+          })()}
+              ${(() => {
+            const checklistCocina = evento.checklistCocina || [];
+            const totalC = checklistCocina.length;
+            const preparadosC = checklistCocina.filter(c => c.preparado).length;
+            if (totalC === 0) return `
+                  <div class="detail-inline-accion">
+                    <div>🍳 Sin checklist de cocina</div>
+                    <button onclick="window._detalleEventoAbierto='${eventoId}'; window.ocultarModalDetallePorChecklist(); window.abrirModalChecklistCocina && window.abrirModalChecklistCocina('${eventoId}')" class="btn-detail-inline">Armar</button>
+                  </div>`;
+            const colorC = preparadosC === totalC ? "#27ae60" : preparadosC === 0 ? "#c0392b" : "#e67e22";
+            return `
+                  <div class="detail-inline-accion">
+                    <div>🍳 <span style="color:${colorC}; font-weight:600;">${preparadosC}/${totalC} cocina preparados</span></div>
+                   <button onclick="window._volverADetalleDesdeChecklist = true; window._detalleEventoAbierto='${eventoId}'; window.ocultarModalDetallePorChecklist(); window.abrirModalChecklistCocina && window.abrirModalChecklistCocina('${eventoId}')" class="btn-detail-inline">Ver</button>
                   </div>`;
           })()}
             </div>

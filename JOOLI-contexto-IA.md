@@ -1,4 +1,4 @@
-# 🧠 CONTEXTO PARA IA – JOOLI CateringDesk (v5 — actualizado 01/04/2026)
+# 🧠 CONTEXTO PARA IA – JOOLI CateringDesk (v7 — actualizado 08/04/2026)
 
 > Pegá este archivo al inicio de cada chat nuevo para trabajar sin subir el proyecto.
 
@@ -101,12 +101,13 @@ images/
 
 ## 🔥 BASE DE DATOS FIRESTORE
 
-| Colección           | Qué guarda                            |
-|---------------------|---------------------------------------|
-| `events`            | Todos los eventos de catering         |
-| `staff`             | Lista de personal (mozos, etc.)       |
-| `catalogoChecklist` | Ítems base del catálogo de checklist  |
-| `notificaciones`    | Avisos entre usuarios en tiempo real  |
+| Colección                  | Qué guarda                                      |
+|----------------------------|-------------------------------------------------|
+| `events`                   | Todos los eventos de catering                   |
+| `staff`                    | Lista de personal (mozos, etc.)                 |
+| `catalogoChecklist`        | Ítems base del catálogo de checklist general    |
+| `catalogoChecklistCocina`  | Ítems del catálogo de cocina (incluye cámara)   |
+| `notificaciones`           | Avisos entre usuarios en tiempo real            |
 
 ---
 
@@ -153,6 +154,7 @@ export const USUARIOS_MAP = {
 - Información agrupada en bloques visuales con fondo suave
 - Clases: `detail-bloque`, `detail-bloque-fila`, `detail-bloque-icono`, `detail-bloque-texto`
 - Bloques: lugar/horario — dinero/pagos — staff/checklist — notas — alquileres — jornadas
+- Si el checklist general o de cocina se abre desde el modal detalle, el detalle **se oculta temporalmente** y al cerrar el checklist **vuelve al detalle**
 
 ### Jornadas (eventos multidia)
 - Cada jornada tiene fecha, tipo, lugar, invitados, staff, horarios, notas y alquileres
@@ -164,9 +166,35 @@ export const USUARIOS_MAP = {
 - Conteo de faltantes, envío de WhatsApp con vista previa
 - PDF tipo ART con lista de personal
 
-### Checklist
-- Por evento, con catálogo base reutilizable
-- Exportación PDF
+### Checklist de cocina — pestaña 🧊 Cámara
+- Muestra ítems de categoría `CAMARA` del catálogo cocina con su stock
+- Stock editable con botones `+` / `−` y también con input numérico directo (`ajustarStockDirecto()`)
+- El número de stock se muestra en rojo si llega a 0, naranja si tiene 3 o menos, verde si hay más
+- Botón 🗑 para eliminar un ítem de cámara (desde esta pestaña, no desde el catálogo base)
+- Todo en una sola línea (`flex-wrap: nowrap`)
+- Formulario al pie para agregar nuevos ítems a cámara con cantidad inicial
+- **Los ítems de cámara NO se agregan al checklist desde esta pestaña** — solo se hace desde la pestaña Checklist
+
+### Checklist de cocina — pestaña Checklist
+- Los ítems de categoría `CAMARA` aparecen diferenciados en el catálogo:
+  - Muestran badge de stock 🧊 con color según disponibilidad
+  - Input de cantidad (58px, entra 3 cifras) + botón redondo ↑ para agregar
+  - Si ya fue agregado: muestra ✔ (deshabilitado)
+  - Si no hay stock: muestra ✕ (deshabilitado)
+- Los ítems de cocina que **NO** son `CAMARA` también permiten elegir la cantidad **antes** de agregarlos al checklist
+- Al agregar un ítem de cámara se descuenta la cantidad del stock automáticamente
+- Al cambiar la cantidad en el checklist (`cambiarCantidadChecklistCocina`) se recalcula la diferencia y ajusta el stock
+- Al eliminar un ítem de cámara del checklist, las unidades vuelven al stock (`Number(item.cantidad)` para evitar concatenación)
+- En la categoría **PANADERÍA**, el botón de WhatsApp 🥖 está en la línea de la categoría dentro del checklist (ya no arriba, al lado del PDF)
+
+### Checklist de cocina — pestaña Catálogo base
+- **No muestra ítems de categoría `CAMARA`** (filtrados en render y bloqueados al guardar)
+- El bloqueo cubre tanto `"CAMARA"` como `"CÁMARA"` (con tilde)
+
+### Checklist general
+- Los ítems del catálogo permiten elegir la cantidad **antes** de agregarlos al checklist
+- Catálogo y checklist están separados visualmente en dos bloques: **Checklist del evento** y **Catálogo disponible**
+- Los títulos de bloques, tabs y nombres de ítems del checklist usan una tipografía más angosta (`Roboto Condensed`) para aprovechar mejor el espacio en celular
 
 ### Administración / Presupuesto y Pagos
 - Total del evento con máscara de miles al editar (formato `es-AR`)
@@ -204,7 +232,7 @@ Lógica CRUD de eventos. Escucha Firestore → llena `window.allEventsData`. Lla
 `resetForm()`, `getFormData()`, `fillFormForEdit()`. Formatea CUIT. Máscara de miles para el campo `total`. Inicializa pagos al abrir un evento para editar (`window._initPagosForm`).
 
 ### `events-render.js`
-`renderFilteredEvents()` y `createCard()`. Cada tarjeta tiene `data-cliente` y `data-mes` (formato `"2026-04"`). Incluye badge countdown. `registerEventDetailModal()` genera el modal de detalle con bloques visuales, incluyendo el bloque de pagos parciales.
+`renderFilteredEvents()` y `createCard()`. Cada tarjeta tiene `data-cliente` y `data-mes` (formato `"2026-04"`). Incluye badge countdown. `registerEventDetailModal()` genera el modal de detalle con bloques visuales, incluyendo el bloque de pagos parciales. Además contiene la lógica para ocultar temporalmente el modal detalle al abrir checklist desde ahí (`ocultarModalDetallePorChecklist`).
 
 ### `events-utils.js`
 Helpers: `formatDate`, `formatDateShort`, `getMonthLabel`, `getCurrentUserName`, `STATUS_COLORS`, `USUARIOS_MAP`.
@@ -225,7 +253,17 @@ Modal de confirmación de eventos pasados.
 CRUD de personal, asignación a eventos, rotación de estados, WhatsApp, historial, PDF ART.
 
 ### `lista.js`
-Checklist por evento, catálogo en Firestore, PDF checklist.
+Checklist por evento, catálogo en Firestore, PDF checklist. Incluye toda la lógica de checklist general, checklist cocina y de la pestaña 🧊 Cámara:
+- `renderPestanaChecklist()` — render del checklist general y su catálogo
+- `renderPestanaChecklistCocina()` — render del checklist cocina y su catálogo
+- `renderPestanaCamara()` — render de la pestaña cámara
+- `ocultarDetalleTemporalmente()` / `restaurarDetalleSiHaceFalta()` — ocultan y restauran el modal detalle cuando se abre/cierra un checklist desde ahí
+- `ajustarStock(itemId, delta)` — suma/resta stock (siempre usa `Number()`)
+- `ajustarStockDirecto(itemId, nuevoStock)` — edición directa por input
+- `cambiarCantidadChecklistCocina(index, nuevaCantidad)` — recalcula diferencia de stock al cambiar cantidad
+- `eliminarChecklistCocinaItem(index)` — devuelve `Number(item.cantidad)` al stock al eliminar
+- `agregarChecklistCocinaItem(nombre, categoria, cantidad)` — descuenta stock al agregar
+- `agregarChecklistItem(nombre, categoria, cantidad)` — permite agregar ítems al checklist general con cantidad elegida desde el catálogo
 
 ### `calendar.js`
 Calendario FullCalendar. Lee eventos de Firestore.
@@ -356,6 +394,21 @@ Calendario FullCalendar. Lee eventos de Firestore.
 - `.detail-pago-resumen--pagado` → verde
 - `.detail-pago-resumen--pendiente` → naranja
 
+### Pestaña Cámara (`css/checklist.css`)
+- `.camara-item` → fila flex, `flex-wrap: nowrap`, una sola línea
+- `.camara-item-nombre` → flex 1, nombre del ítem
+- `.camara-item-controles` → flex con botones + / − e input de stock
+- `.camara-stock` → número de stock (ahora es `<input type="number">`, no `<span>`)
+- `.camara-stock--ok` → verde (más de 3)
+- `.camara-stock--bajo` → naranja (3 o menos)
+- `.camara-stock--vacio` → rojo (0)
+- `.btn-stock--sumar` / `.btn-stock--restar` → botones circulares verde/rojo
+- `.camara-stock-badge` → badge de stock en la pestaña Checklist (junto al nombre del ítem)
+- `.camara-cantidad-input--mini` → input de cantidad en checklist (58px)
+- `.btn-camara-mini` → botón redondo naranja con ↑ para agregar al checklist
+- `.btn-camara-mini--ya` → verde apagado con ✔ (ya agregado)
+- `.btn-camara-mini--sin-stock` → gris con ✕ (sin stock)
+
 ---
 
 ## ⚠️ DECISIONES TÉCNICAS TOMADAS
@@ -366,6 +419,13 @@ Calendario FullCalendar. Lee eventos de Firestore.
 - **Factura única reemplazada por pagos parciales**: los campos `invoiceType`, `invoiceNumber` y `facturaURL` a nivel raíz del evento son legacy (solo en eventos viejos). Los nuevos eventos usan el array `pagos`.
 - **Campo `paid` se mantiene independiente**: es un booleano de "cobrado total" que coexiste con el array de pagos parciales.
 - **Máscara de miles en montos**: los campos `total` y montos de pagos usan `type="text"` con `inputmode="numeric"`. Se formatean con `toLocaleString("es-AR")` al perder el foco y se limpian al enfocar. Se guarda siempre el número limpio en Firestore.
+- **z-index `#modalAvisoSimple` en 9999**: subido desde 1200 para quedar siempre por encima de cualquier modal apilado (`.modal-checklist` tiene z-index 2600).
+- **Stock de cámara siempre con `Number()`**: todas las operaciones de stock usan `Number()` explícito para evitar concatenación de strings. Afecta `ajustarStock`, `eliminarChecklistCocinaItem` y `cambiarCantidadChecklistCocina`.
+- **Listener `change` en modal de checklist cocina**: maneja dos acciones: `cantidad-checklist-cocina` (cambia cantidad de ítem en checklist) y `editar-stock-directo` (edita stock de cámara con input numérico).
+- **Categoría CAMARA bloqueada en catálogo base**: filtrada del select de categorías y validada al guardar, bloqueando tanto `"CAMARA"` como `"CÁMARA"` (con tilde).
+- **Modal detalle + checklist**: al abrir checklist general o cocina desde el detalle, el modal detalle se oculta temporalmente y se restaura al cerrar el checklist. No se cierra definitivamente.
+- **Tipografía del checklist**: para aprovechar mejor el ancho en celular, los nombres de ítems, categorías, tabs y títulos del modal checklist usan `Roboto Condensed`.
+- **Calendario FullCalendar**: los eventos `Presupuestado` (amarillos) muestran el texto en negro para mejorar contraste. En FullCalendar esto se resolvió atacando `.fc-event-title` / `.fc-event-time`, no solo las variables del badge.
 
 ---
 
@@ -390,4 +450,4 @@ Apunta a resolver tareas reales del día a día.
 
 ---
 
-*Fin del contexto — v5, actualizado 01/04/2026*
+*Fin del contexto — v6, actualizado 08/04/2026*
